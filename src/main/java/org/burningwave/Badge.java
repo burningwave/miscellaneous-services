@@ -28,13 +28,16 @@ public class Badge {
 	        bound *= 10;
 	    }
 	    int labelPosition = (width - rightBlockWidth) * 5;
+	    int valuePosition = (labelPosition * 2) + (rightBlockWidth * 5);
 	    return badgeTemplate
 	    	.replace("${width}", Integer.toString(width))
 	    	.replace("${rightBlockWidth}", Integer.toString(rightBlockWidth))
 	    	.replace("${rightBlockPosition}", Integer.toString(width - rightBlockWidth))
 	    	.replace("${rightBlockColor}", rightBlockColor)
 	    	.replace("${labelPosition}", Integer.toString(labelPosition))
-	    	.replace("${valuePosition}", Integer.toString((labelPosition * 2) + (rightBlockWidth * 5)))
+	    	.replace("${labelShadowPosition}", Integer.toString(labelPosition + 10))
+	    	.replace("${valuePosition}", Integer.toString(valuePosition))
+	    	.replace("${valueShadowPosition}", Integer.toString(valuePosition + 10))
 	    	.replace("${title}", label)
 		    .replace("${label}", label)
 		    .replace("${value}", effectiveValue != null ? Long.toString(value) : "NaN");
