@@ -14,6 +14,7 @@ import javax.xml.bind.JAXBException;
 import org.burningwave.Badge;
 import org.burningwave.SimpleCache;
 import org.burningwave.Utility;
+import org.burningwave.core.assembler.StaticComponentContainer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -62,6 +63,18 @@ public class Application {
 	@ConfigurationProperties("cache")
 	public Map<String, String> cacheConfig(){
 		return new LinkedHashMap<>();
+	}
+
+	@Bean("burningwave.core.static.config")
+	@ConfigurationProperties("burningwave.core.static")
+	public Map<String, String> burningwaveCoreStaticConfig(){
+		return new LinkedHashMap<>();
+	}
+
+	@Bean("staticComponentContainerClass")
+	public Class<?> staticComponentContainer(@Qualifier("burningwave.core.static.config") Map<String, String> configMap) {
+		StaticComponentContainer.Configuration.addValues(configMap);
+		return StaticComponentContainer.class;
 	}
 
 	@Bean("cache")

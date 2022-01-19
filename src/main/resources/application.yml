@@ -26,3 +26,5 @@ spring.jpa.hibernate.ddl-auto: update
 
 scheduled-operations.ping.cron: ${SCHEDULED_OPERATIONS_PING_CRON:-}
 scheduled-operations.ping.zone: ${SCHEDULED_OPERATIONS_PING_ZONE:Europe/Rome}
+
+burningwave.core.static.managed-logger.repository: 'org.burningwave.core.SLF4JManagedLoggerRepository'
