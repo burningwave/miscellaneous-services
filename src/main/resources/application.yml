@@ -14,7 +14,8 @@ github-connector.cache.ttl: ${GITHUB_CONNECTOR_CACHE_TTL:86400000}
 application-self-connector.host: ${APPLICATION_SELF_CONNECTOR_HOST:burningwave.herokuapp.com}
 
 cache.type: ${CACHE_TYPE:org.burningwave.DBBasedCache}
-cache.base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
+#cache.type: ${CACHE_TYPE:org.burningwave.FSBasedCache}
+#cache.base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
 
 spring.datasource.url: ${JDBC_DATABASE_URL:jdbc:postgresql://localhost:5432/postgres}
 spring.datasource.username: ${JDBC_DATABASE_USERNAME:postgres}
