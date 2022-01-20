@@ -25,7 +25,7 @@ spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation: true
 spring.jpa.properties.hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
 spring.jpa.hibernate.ddl-auto: update
 
-scheduled-operations.ping.cron: ${SCHEDULED_OPERATIONS_PING_CRON:-}
-scheduled-operations.ping.zone: ${SCHEDULED_OPERATIONS_PING_ZONE:Europe/Rome}
+scheduled-operations.ping.cron: ${SCHEDULED_OPERATIONS_PING_CRON:0 0/20 * * * *}
+scheduled-operations.ping.zone: ${SCHEDULED_OPERATIONS_PING_ZONE:UTC}
 
 burningwave.core.static.managed-logger.repository: 'org.burningwave.core.SLF4JManagedLoggerRepository'
