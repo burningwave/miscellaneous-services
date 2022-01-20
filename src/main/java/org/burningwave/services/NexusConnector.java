@@ -182,9 +182,9 @@ public class NexusConnector {
 			input.getGroupId() + ";" +
 			input.getArtifactId() + ";" +
 			new SimpleDateFormat("yyyyMM").format(input.getStartDate()) + ";" +
-			(input.isCustomMonths() ?
+			(input.monthsFieldHasBeenSetFromExternal() ?
 				input.getMonths():
-				"defaultValue");
+				"diffFromToday");
 	}
 
 
@@ -270,7 +270,7 @@ public class NexusConnector {
     	private String artifactId;
     	private Date startDate;
     	private Integer months;
-    	private boolean customMonths;
+    	private boolean monthsFieldHasBeenSetFromExternal;
 
     	private GetStatsInput(String projectId, String groupId, Date startDate) {
     		this.projectId = projectId;
@@ -313,11 +313,11 @@ public class NexusConnector {
 		}
 		public GetStatsInput setMonths(Integer months) {
 			this.months = months;
-			customMonths = true;
+			monthsFieldHasBeenSetFromExternal = true;
 			return this;
 		}
-		boolean isCustomMonths() {
-			return customMonths;
+		boolean monthsFieldHasBeenSetFromExternal() {
+			return monthsFieldHasBeenSetFromExternal;
 		}
     }
 
