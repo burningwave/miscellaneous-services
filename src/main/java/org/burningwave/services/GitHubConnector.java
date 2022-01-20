@@ -221,14 +221,18 @@ public class GitHubConnector {
 		return outputSuppliers;
 	}
 
-	@Getter @Setter @NoArgsConstructor
+	@NoArgsConstructor
+	@Getter
+	@Setter
 	public static class Input {
 		private String username;
 		private String repositoyName;
 
 	}
 
-	@Getter @Setter @NoArgsConstructor
+	@NoArgsConstructor
+	@Getter
+	@Setter
 	public static class GetStarCountOutput implements Serializable {
 
 		private static final long serialVersionUID = 5045091698760296866L;

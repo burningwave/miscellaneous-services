@@ -321,7 +321,9 @@ public class NexusConnector {
 		}
     }
 
-    @Getter @Setter @NoArgsConstructor
+    @NoArgsConstructor
+    @Getter
+    @Setter
     public static class GetAllStatsOutput implements Serializable {
 
 		private static final long serialVersionUID = 287571224336835644L;
@@ -333,7 +335,9 @@ public class NexusConnector {
 
 	@XmlRootElement(name = "statsTimelineResp")
 	@XmlAccessorType(XmlAccessType.FIELD)
-	@Getter @Setter @NoArgsConstructor
+	@NoArgsConstructor
+	@Getter
+	@Setter
 	public static class GetStatsOutput implements Serializable {
 		private static final long serialVersionUID = 3642117423686944572L;
 
@@ -344,7 +348,9 @@ public class NexusConnector {
 		private Data data;
 
 		@XmlAccessorType(XmlAccessType.FIELD)
-		@Getter @Setter @NoArgsConstructor
+		@NoArgsConstructor
+		@Getter
+		@Setter
 		public static class Data implements Serializable {
 
 			private static final long serialVersionUID = -5272099947960951863L;
@@ -368,7 +374,9 @@ public class NexusConnector {
 			private Timeline timeline;
 
 			@XmlAccessorType(XmlAccessType.FIELD)
-			@Getter @Setter @NoArgsConstructor
+			@NoArgsConstructor
+			@Getter
+			@Setter
 			public static class Timeline implements Serializable {
 
 				private static final long serialVersionUID = 2507704512441988141L;
