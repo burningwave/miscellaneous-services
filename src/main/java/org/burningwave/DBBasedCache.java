@@ -14,6 +14,10 @@ import javax.persistence.Table;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 public class DBBasedCache implements SimpleCache {
 	private final static org.slf4j.Logger logger;
 
@@ -65,7 +69,10 @@ public class DBBasedCache implements SimpleCache {
 
 	@Entity
 	@Table(name = "CacheItem")
-	public static class Item {
+	@Getter @Setter @NoArgsConstructor
+	public static class Item implements Serializable {
+
+		private static final long serialVersionUID = 3154577811258150600L;
 
 		@Id
 		@GeneratedValue(strategy = GenerationType.AUTO)
@@ -76,31 +83,6 @@ public class DBBasedCache implements SimpleCache {
 
 		@Column(name = "value")
 		private byte[] value;
-
-
-		public long getId() {
-			return id;
-		}
-
-		public void setId(long id) {
-			this.id = id;
-		}
-
-		public String getKey() {
-			return key;
-		}
-
-		public void setKey(String key) {
-			this.key = key;
-		}
-
-		public byte[] getValue() {
-			return value;
-		}
-
-		public void setValue(byte[] value) {
-			this.value = value;
-		}
 
 		@org.springframework.stereotype.Repository
 		public static interface Repository extends JpaRepository<Item, String>  {

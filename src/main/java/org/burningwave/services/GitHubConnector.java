@@ -33,6 +33,10 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 public class GitHubConnector {
 
 	private final static org.slf4j.Logger logger;
@@ -71,7 +75,7 @@ public class GitHubConnector {
 	@SuppressWarnings("rawtypes")
 	private GetStarCountOutput callRemoteService(Input input) {
 		UriComponents uriComponents =
-			getStarCountUriComponentsBuilder.get().pathSegment(input.getUsername()).pathSegment(input.getRepositoryName())
+			getStarCountUriComponentsBuilder.get().pathSegment(input.getUsername()).pathSegment(input.getRepositoyName())
 			.build();
 		ResponseEntity<Map> response = restTemplate.exchange(
 			uriComponents.toString(),
@@ -146,7 +150,7 @@ public class GitHubConnector {
     	return
 			input.getClass().getName() + ";" +
 			input.getUsername() + ";" +
-			input.getRepositoryName();
+			input.getRepositoyName();
 	}
 
 
@@ -170,7 +174,7 @@ public class GitHubConnector {
 		if (username != null && repositoryName != null) {
 			Input input = new Input();
 			input.setUsername(username);
-			input.setRepositoryName(repositoryName);
+			input.setRepositoyName(repositoryName);
 			outputSuppliers.add(
 				CompletableFuture.supplyAsync(() ->
 					function.apply(input)
@@ -181,7 +185,7 @@ public class GitHubConnector {
 				if (usernameAndRepositories.getValue().contains(repositoryName)) {
 					Input input = new Input();
 					input.setUsername(usernameAndRepositories.getKey());
-					input.setRepositoryName(repositoryName);
+					input.setRepositoyName(repositoryName);
 					outputSuppliers.add(
 						CompletableFuture.supplyAsync(() ->
 						function.apply(input)
@@ -193,7 +197,7 @@ public class GitHubConnector {
 			for (String repoName : allProjectsInfo.get(username)) {
 				Input input = new Input();
 				input.setUsername(username);
-				input.setRepositoryName(repoName);
+				input.setRepositoyName(repoName);
 				outputSuppliers.add(
 					CompletableFuture.supplyAsync(() ->
 						function.apply(input)
@@ -205,7 +209,7 @@ public class GitHubConnector {
 				for (String repoName : usernameAndRepositories.getValue()) {
 					Input input = new Input();
 					input.setUsername(usernameAndRepositories.getKey());
-					input.setRepositoryName(repoName);
+					input.setRepositoyName(repoName);
 					outputSuppliers.add(
 						CompletableFuture.supplyAsync(() ->
 							function.apply(input)
@@ -217,47 +221,20 @@ public class GitHubConnector {
 		return outputSuppliers;
 	}
 
+	@Getter @Setter @NoArgsConstructor
 	public static class Input {
 		private String username;
 		private String repositoyName;
 
-		public String getUsername() {
-			return username;
-		}
-		public void setUsername(String user) {
-			this.username = user;
-		}
-		public String getRepositoryName() {
-			return repositoyName;
-		}
-		public void setRepositoryName(String repoName) {
-			this.repositoyName = repoName;
-		}
-
-
 	}
 
+	@Getter @Setter @NoArgsConstructor
 	public static class GetStarCountOutput implements Serializable {
 
 		private static final long serialVersionUID = 5045091698760296866L;
 
 		private Date time;
 		private Integer count;
-
-
-		public Date getTime() {
-			return time;
-		}
-		public void setTime(Date time) {
-			this.time = time;
-		}
-		public Integer getCount() {
-			return count;
-		}
-		public void setCount(Integer count) {
-			this.count = count;
-		}
-
 
 	}
 

@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
@@ -39,6 +41,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 public class NexusConnector {
 	private final static org.slf4j.Logger logger;
@@ -315,6 +321,7 @@ public class NexusConnector {
 		}
     }
 
+    @Getter @Setter @NoArgsConstructor
     public static class GetAllStatsOutput implements Serializable {
 
 		private static final long serialVersionUID = 287571224336835644L;
@@ -322,163 +329,65 @@ public class NexusConnector {
 		private Long totalDownloads;
     	private List<Integer> downloadsForMonth;
 
-		public Long getTotalDownloads() {
-			return totalDownloads;
-		}
-
-		void setTotalDownloads(Long total) {
-			this.totalDownloads = total;
-		}
-
-		public List<Integer> getDownloadsForMonth() {
-			return downloadsForMonth;
-		}
-
-		void setDownloadsForMonth(List<Integer> values) {
-			this.downloadsForMonth = values;
-		}
-
     }
 
 	@XmlRootElement(name = "statsTimelineResp")
+	@XmlAccessorType(XmlAccessType.FIELD)
+	@Getter @Setter @NoArgsConstructor
 	public static class GetStatsOutput implements Serializable {
-		private Date time;
-		private Data data;
-
-	    @XmlTransient
-		public Date getTime() {
-			return time;
-		}
-
-		public void setTime(Date time) {
-			this.time = time;
-		}
-
-		@XmlElement
-		public Data getData() {
-			return data;
-		}
-
-		public void setData(Data data) {
-			this.data = data;
-		}
-
 		private static final long serialVersionUID = 3642117423686944572L;
 
+		@XmlTransient
+		private Date time;
+
+		@XmlElement
+		private Data data;
+
+		@XmlAccessorType(XmlAccessType.FIELD)
+		@Getter @Setter @NoArgsConstructor
 		public static class Data implements Serializable {
 
 			private static final long serialVersionUID = -5272099947960951863L;
 
-
+			@XmlElement
 			private String projectId;
+
+			@XmlElement
 			private String groupId;
+
+			@XmlElement
 			private String artifactId;
+
+			@XmlElement
 			private String type;
+
+			@XmlElement
 			private long total;
+
+			@XmlElement
 			private Timeline timeline;
 
-			@XmlElement
-			public String getProjectId() {
-				return projectId;
-			}
-			public void setProjectId(String projectId) {
-				this.projectId = projectId;
-			}
-
-			@XmlElement
-			public String getGroupId() {
-				return groupId;
-			}
-			public void setGroupId(String groupId) {
-				this.groupId = groupId;
-			}
-
-			@XmlElement
-			public String getArtifactId() {
-				return artifactId;
-			}
-			public void setArtifactId(String artifactId) {
-				this.artifactId = artifactId;
-			}
-
-			@XmlElement
-			public String getType() {
-				return type;
-			}
-			public void setType(String type) {
-				this.type = type;
-			}
-
-			@XmlElement
-			public long getTotal() {
-				return total;
-			}
-			public void setTotal(long total) {
-				this.total = total;
-			}
-
-
-			@XmlElement
-			public Timeline getTimeline() {
-				return timeline;
-			}
-			public void setTimeline(Timeline timeline) {
-				this.timeline = timeline;
-			}
-
-
+			@XmlAccessorType(XmlAccessType.FIELD)
+			@Getter @Setter @NoArgsConstructor
 			public static class Timeline implements Serializable {
 
 				private static final long serialVersionUID = 2507704512441988141L;
 
-				private List<Integer> values;
-
 				@XmlElement(name = "int")
-				public List<Integer> getValues() {
-					return values;
-				}
-
-				public void setValues(List<Integer> values) {
-					this.values = values;
-				}
+				private List<Integer> values;
 
 			}
 		}
 
 	}
 
+	@Getter @Setter @NoArgsConstructor
 	private static class Project {
+
 		private Calendar startDate;
 		private String id;
 		private String groupId;
 		private Map<String, String> artifactIds;
-
-
-		public Calendar getStartDate() {
-			return startDate;
-		}
-		public void setStartDate(Calendar startDate) {
-			this.startDate = startDate;
-		}
-		public String getId() {
-			return id;
-		}
-		public void setId(String id) {
-			this.id = id;
-		}
-		public String getGroupId() {
-			return groupId;
-		}
-		public void setGroupId(String groupId) {
-			this.groupId = groupId;
-		}
-		public Map<String, String> getArtifactIds() {
-			return artifactIds;
-		}
-		public void setArtifactIds(Map<String, String> artifactIds) {
-			this.artifactIds = artifactIds;
-		}
-
 
 	}
 
