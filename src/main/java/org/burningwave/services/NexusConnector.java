@@ -105,7 +105,7 @@ public class NexusConnector {
 		return Synchronizer.execute(Objects.getId(this) + key, () -> {
     		GetStatsOutput newOutput;
 			try {
-				newOutput = callRemoteService(input);
+				newOutput = callGetStatsRemote(input);
 			} catch (Throwable exc) {
 				if (oldOutput != null) {
 					return oldOutput;
@@ -188,7 +188,7 @@ public class NexusConnector {
 	}
 
 
-	private GetStatsOutput callRemoteService(GetStatsInput input) throws JAXBException {
+	private GetStatsOutput callGetStatsRemote(GetStatsInput input) throws JAXBException {
 		UriComponents uriComponents =
 			getStatsUriComponentsBuilder.get().queryParam("p", input.getProjectId())
 			.queryParam("g", input.getGroupId())

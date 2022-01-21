@@ -73,7 +73,7 @@ public class GitHubConnector {
 
 
 	@SuppressWarnings("rawtypes")
-	private GetStarCountOutput callRemoteService(Input input) {
+	private GetStarCountOutput callRetrieveInfoRemote(Input input) {
 		UriComponents uriComponents =
 			getStarCountUriComponentsBuilder.get().pathSegment(input.getUsername()).pathSegment(input.getRepositoyName())
 			.build();
@@ -126,7 +126,7 @@ public class GitHubConnector {
 		return Synchronizer.execute(Objects.getId(this) + key, () -> {
 			GetStarCountOutput newOutput;
 			try {
-				newOutput = callRemoteService(input);
+				newOutput = callRetrieveInfoRemote(input);
 			} catch (Throwable exc) {
 				if (oldOutput != null) {
 					return oldOutput;
