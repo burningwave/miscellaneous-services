@@ -65,17 +65,17 @@ public class Application {
 		return new LinkedHashMap<>();
 	}
 
-	@Bean("burningwave.core.static.config")
-	@ConfigurationProperties("burningwave.core.static")
-	public Map<String, String> burningwaveCoreStaticConfig(){
-		return new LinkedHashMap<>();
-	}
+@Bean("burningwave.core.static-component-container.config")
+@ConfigurationProperties("burningwave.core.static-component-container")
+public Map<String, String> staticComponentContainerConfig(){
+	return new LinkedHashMap<>();
+}
 
-	@Bean("staticComponentContainer")
-	public Class<StaticComponentContainer> staticComponentContainer(@Qualifier("burningwave.core.static.config") Map<String, String> configMap) {
-		StaticComponentContainer.Configuration.addValues(configMap);
-		return StaticComponentContainer.class;
-	}
+@Bean("staticComponentContainer")
+public Class<StaticComponentContainer> staticComponentContainer(@Qualifier("burningwave.core.static-component-container.config") Map<String, String> configMap) {
+	StaticComponentContainer.Configuration.addValues(configMap);
+	return StaticComponentContainer.class;
+}
 
 	@Bean("cache")
 	public SimpleCache cache(
