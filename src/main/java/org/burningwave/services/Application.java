@@ -59,23 +59,23 @@ public class Application {
 		return new Utility();
 	}
 
-	@Bean("cacheConfig")
-	@ConfigurationProperties("cache")
-	public Map<String, String> cacheConfig(){
-		return new LinkedHashMap<>();
-	}
-
-@Bean("burningwave.core.static-component-container.config")
-@ConfigurationProperties("burningwave.core.static-component-container")
-public Map<String, String> staticComponentContainerConfig(){
+@Bean("cacheConfig")
+@ConfigurationProperties("cache")
+public Map<String, String> cacheConfig(){
 	return new LinkedHashMap<>();
 }
 
-@Bean("staticComponentContainer")
-public Class<StaticComponentContainer> staticComponentContainer(@Qualifier("burningwave.core.static-component-container.config") Map<String, String> configMap) {
-	StaticComponentContainer.Configuration.addValues(configMap);
-	return StaticComponentContainer.class;
-}
+	@Bean("burningwave.core.static-component-container.config")
+	@ConfigurationProperties("burningwave.core.static-component-container")
+	public Map<String, String> staticComponentContainerConfig(){
+		return new LinkedHashMap<>();
+	}
+
+	@Bean
+	public Class<StaticComponentContainer> staticComponentContainer(@Qualifier("burningwave.core.static-component-container.config") Map<String, String> configMap) {
+		StaticComponentContainer.Configuration.addValues(configMap);
+		return StaticComponentContainer.class;
+	}
 
 	@Bean("cache")
 	public SimpleCache cache(

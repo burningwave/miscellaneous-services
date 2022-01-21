@@ -29,3 +29,4 @@ scheduled-operations.ping.cron: ${SCHEDULED_OPERATIONS_PING_CRON:-}
 scheduled-operations.ping.zone: ${SCHEDULED_OPERATIONS_PING_ZONE:UTC}
 
 burningwave.core.static-component-container.managed-logger.repository: 'org.burningwave.core.SLF4JManagedLoggerRepository'
+burningwave.core.static-component-container.modules.export-all-to-all: false
