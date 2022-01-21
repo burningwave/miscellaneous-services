@@ -59,11 +59,11 @@ public class Application {
 		return new Utility();
 	}
 
-@Bean("cacheConfig")
-@ConfigurationProperties("cache")
-public Map<String, String> cacheConfig(){
-	return new LinkedHashMap<>();
-}
+	@Bean("cacheConfig")
+	@ConfigurationProperties("cache")
+	public Map<String, String> cacheConfig(){
+		return new LinkedHashMap<>();
+	}
 
 	@Bean("burningwave.core.static-component-container.config")
 	@ConfigurationProperties("burningwave.core.static-component-container")
