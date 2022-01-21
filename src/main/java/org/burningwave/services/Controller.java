@@ -3,7 +3,6 @@ package org.burningwave.services;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
 import javax.servlet.http.HttpServletResponse;
@@ -77,7 +76,7 @@ public class Controller {
 		response.setHeader("Cache-Control", "no-store");
 		String label = "artifact downloads";
 		return badge.build(
-			getTotalDownloadsOrNull(artifactId, startDate, months) + new Random().nextInt(10000),
+			getTotalDownloadsOrNull(artifactId, startDate, months),
 			artifactId != null ? artifactId + " " + label : label,
 			label,
 			"#4c1",
