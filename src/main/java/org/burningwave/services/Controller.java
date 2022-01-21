@@ -74,9 +74,13 @@ public class Controller {
 		HttpServletResponse response
 	) throws JAXBException, ParseException, InterruptedException, ExecutionException {
 		response.setHeader("Cache-Control", "no-store");
+		String label = "artifact downloads";
 		return badge.build(
 			getTotalDownloadsOrNull(artifactId, startDate, months),
-			"artifact downloads", "#4c1", 125
+			artifactId != null ? label + " " + artifactId : label,
+			label,
+			"#4c1",
+			125
 		);
 	}
 
@@ -96,8 +100,10 @@ public class Controller {
 		HttpServletResponse response
 	) {
 		response.setHeader("Cache-Control", "no-store");
+		String label = "GitHub stars";
 		return badge.build(
 			getStarCountOrNull(username, repositoryName),
+			repositoryName != null ? label + " " + repositoryName : label,
 			"GitHub stars", "#78e", 93
 		);
 	}

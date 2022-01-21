@@ -16,7 +16,13 @@ public class Badge {
         ).lines().collect(Collectors.joining("\n"));
 	}
 
-	public String build(Number effectiveValue, String label, String rightBlockColor, int width) {
+	public String build(
+		Number effectiveValue,
+		String title,
+		String label,
+		String rightBlockColor,
+		int width
+	) {
 		Long value = effectiveValue != null ?
 			effectiveValue.longValue()
 			: 1000L;
@@ -38,7 +44,7 @@ public class Badge {
 	    	.replace("${labelShadowPosition}", Integer.toString(labelPosition + 10))
 	    	.replace("${valuePosition}", Integer.toString(valuePosition))
 	    	.replace("${valueShadowPosition}", Integer.toString(valuePosition + 10))
-	    	.replace("${title}", label)
+	    	.replace("${title}", title)
 		    .replace("${label}", label)
 		    .replace("${value}", effectiveValue != null ? Long.toString(value) : "NaN");
 	}
