@@ -71,8 +71,8 @@ public class Application {
 		return new LinkedHashMap<>();
 	}
 
-	@Bean("staticComponentContainerClass")
-	public Class<?> staticComponentContainer(@Qualifier("burningwave.core.static.config") Map<String, String> configMap) {
+	@Bean("staticComponentContainer")
+	public Class<StaticComponentContainer> staticComponentContainer(@Qualifier("burningwave.core.static.config") Map<String, String> configMap) {
 		StaticComponentContainer.Configuration.addValues(configMap);
 		return StaticComponentContainer.class;
 	}
