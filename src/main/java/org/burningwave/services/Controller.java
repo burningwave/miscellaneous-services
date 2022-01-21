@@ -77,7 +77,7 @@ public class Controller {
 		String label = "artifact downloads";
 		return badge.build(
 			getTotalDownloadsOrNull(artifactId, startDate, months),
-			artifactId != null ? label + " " + artifactId : label,
+			artifactId != null ? artifactId + " " + label : label,
 			label,
 			"#4c1",
 			125
@@ -103,7 +103,7 @@ public class Controller {
 		String label = "GitHub stars";
 		return badge.build(
 			getStarCountOrNull(username, repositoryName),
-			repositoryName != null ? label + " " + repositoryName : label,
+			repositoryName != null ? repositoryName + " " + label : label,
 			"GitHub stars", "#78e", 93
 		);
 	}
