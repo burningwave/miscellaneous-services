@@ -277,7 +277,7 @@ public class GitHubConnector implements SimpleCache.Listener {
 						new HttpEntity<String>(headers),
 						Map.class
 					);
-
+					logger.info("Remote cache {}/{} successfully updated", usernameAndRepositories.getKey(), project.getRepositoryName());
 				}
 			}
 		}
