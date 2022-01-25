@@ -13,7 +13,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class FSBasedCache implements SimpleCache {
+public class FSBasedCache extends SimpleCache.Abst {
 	private final static org.slf4j.Logger logger;
 
 	@Autowired

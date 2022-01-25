@@ -119,12 +119,14 @@ public class NexusConnector {
 			newDate.set(Calendar.MINUTE, 0);
 			newDate.set(Calendar.SECOND, 0);
 			newDate.set(Calendar.MILLISECOND, 0);
+			Runnable storer = () -> cache.storeAndNotify(key, newOutput, oldOutput);
     		if (oldOutput != null && oldOutput.getData().getTotal() == newOutput.getData().getTotal()) {
     			newDate.setTime(oldOutput.getTime());
     			newDate.add(Calendar.DATE, 1);
+    			storer = () -> cache.store(key, newOutput);
     		}
     		newOutput.setTime(newDate.getTime());
-    		cache.store(key, newOutput);
+    		storer.run();
 			inMemoryCache.put(key, newOutput);
 			return newOutput;
 		});

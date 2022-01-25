@@ -24,6 +24,7 @@ import javax.xml.bind.JAXBException;
 
 import org.burningwave.SimpleCache;
 import org.burningwave.Throwables;
+import org.burningwave.services.NexusConnector.GetStatsOutput;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -33,18 +34,19 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-public class GitHubConnector {
+public class GitHubConnector implements SimpleCache.Listener {
 
 	private final static org.slf4j.Logger logger;
 
 	private RestTemplate restTemplate;
-	private HttpEntity<String> entity;
-	private Supplier<UriComponentsBuilder> getStarCountUriComponentsBuilder;
-	private Map<String, Collection<String>> allProjectsInfo;
+	private HttpHeaders headers;
+	private Supplier<UriComponentsBuilder> reposComponentsBuilder;
+	private Map<String, Collection<Project>> allProjectsInfo;
 	private Map<String, GetStarCountOutput> inMemoryCache;
 	private long timeToLiveForInMemoryCache;
 
@@ -58,10 +60,9 @@ public class GitHubConnector {
 
     public GitHubConnector(Map<String, Object> configMap) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
     	restTemplate = new RestTemplate();
-    	HttpHeaders headers = new HttpHeaders();
+    	headers = new HttpHeaders();
         headers.set("Authorization", configMap.get("authorization.token.type") + " " + configMap.get("authorization.token"));
-        entity = new HttpEntity<String>(headers);
-        getStarCountUriComponentsBuilder = () -> UriComponentsBuilder.newInstance()
+        reposComponentsBuilder = () -> UriComponentsBuilder.newInstance()
         	.scheme("https")
         	.host((String)configMap
         	.get("host"))
@@ -75,12 +76,12 @@ public class GitHubConnector {
 	@SuppressWarnings("rawtypes")
 	private GetStarCountOutput callRetrieveInfoRemote(Input input) {
 		UriComponents uriComponents =
-			getStarCountUriComponentsBuilder.get().pathSegment(input.getUsername()).pathSegment(input.getRepositoyName())
+			reposComponentsBuilder.get().pathSegment(input.getUsername()).pathSegment(input.getRepositoyName())
 			.build();
 		ResponseEntity<Map> response = restTemplate.exchange(
 			uriComponents.toString(),
 			HttpMethod.GET,
-			entity,
+			new HttpEntity<String>(headers),
 			Map.class
 		);
 		Map remoteServiceOutput = response.getBody();
@@ -94,14 +95,24 @@ public class GitHubConnector {
 		logger.info("In memory cache cleaning done");
 	}
 
-    private Map<String, Collection<String>> retrieveProjectsInfo(String projectInfosAsString) {
-    	Map<String, Collection<String>> projectsInfo = new ConcurrentHashMap<>();
+    private Map<String, Collection<Project>> retrieveProjectsInfo(String projectInfosAsString) {
+    	Map<String, Collection<Project>> projectsInfo = new ConcurrentHashMap<>();
     	for (String projectInfoAsString : projectInfosAsString.split(";")) {
-    		Collection<String> repoNames = new CopyOnWriteArrayList<>();
+    		Collection<Project> projects = new CopyOnWriteArrayList<>();
     		String[] infos = projectInfoAsString.split("/");
-    		projectsInfo.put(infos[0], repoNames);
+    		String[] keyFragments = infos[0].split(":");
+    		projectsInfo.put(keyFragments[0], projects);
     		for (int i = 1; i < infos.length; i++) {
-    			repoNames.add(infos[i]);
+    			String[] valuesGroupOne = infos[i].split("\\\\");
+    			String[] valuesGroupTwo = valuesGroupOne[0].split(":");
+    			projects.add(
+    				new Project(
+    					valuesGroupTwo[0],
+	    				valuesGroupOne.length > 1 ? valuesGroupOne[1] : null,
+	    				keyFragments.length > 1 ? keyFragments[1] : null,
+	    				valuesGroupTwo.length > 1 ? valuesGroupTwo[1] : null
+	    			)
+    			);
     		}
     	}
 		return projectsInfo;
@@ -181,8 +192,8 @@ public class GitHubConnector {
 				)
 			);
 		} else if (username == null && repositoryName != null) {
-			for (Entry<String, Collection<String>> usernameAndRepositories : allProjectsInfo.entrySet()) {
-				if (usernameAndRepositories.getValue().contains(repositoryName)) {
+			for (Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
+				if (usernameAndRepositories.getValue().stream().filter(project -> repositoryName.equals(project.getRepositoryName())).findFirst().isPresent()) {
 					Input input = new Input();
 					input.setUsername(usernameAndRepositories.getKey());
 					input.setRepositoyName(repositoryName);
@@ -194,10 +205,10 @@ public class GitHubConnector {
 				}
 			}
 		} else if (username != null && repositoryName == null) {
-			for (String repoName : allProjectsInfo.get(username)) {
+			for (Project project : allProjectsInfo.get(username)) {
 				Input input = new Input();
 				input.setUsername(username);
-				input.setRepositoyName(repoName);
+				input.setRepositoyName(project.getRepositoryName());
 				outputSuppliers.add(
 					CompletableFuture.supplyAsync(() ->
 						function.apply(input)
@@ -205,11 +216,11 @@ public class GitHubConnector {
 				);
 			}
 		} else {
-			for (Entry<String, Collection<String>> usernameAndRepositories : allProjectsInfo.entrySet()) {
-				for (String repoName : usernameAndRepositories.getValue()) {
+			for (Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
+				for (Project project : usernameAndRepositories.getValue()) {
 					Input input = new Input();
 					input.setUsername(usernameAndRepositories.getKey());
-					input.setRepositoyName(repoName);
+					input.setRepositoyName(project.getRepositoryName());
 					outputSuppliers.add(
 						CompletableFuture.supplyAsync(() ->
 							function.apply(input)
@@ -242,4 +253,45 @@ public class GitHubConnector {
 
 	}
 
+	@Override
+	public <T extends Serializable> void processChangeNotification(String key, T newValue, T oldValue) {
+		if (newValue instanceof GetStatsOutput) {
+			GetStatsOutput value = (GetStatsOutput)newValue;
+			for (Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
+				Project project = usernameAndRepositories.getValue().stream().filter(prj ->
+					value.getData().getGroupId().equals(prj.getGroupId()) &&
+					value.getData().getArtifactId().equals(prj.getRepositoryName())
+				).findFirst().orElse(null);
+				if (project != null) {
+					UriComponents uriComponents = reposComponentsBuilder.get()
+						.pathSegment(
+							usernameAndRepositories.getKey(),
+							project.getRepositoryName(),
+							"actions", "runs",
+							project.getUpdateCacheWorkflowId(),
+							"rerun"
+						).build();
+					restTemplate.exchange(
+						uriComponents.toString(),
+						HttpMethod.POST,
+						new HttpEntity<String>(headers),
+						Map.class
+					);
+
+				}
+			}
+		}
+	}
+
+	@Getter
+	@Setter
+	@NoArgsConstructor
+	@AllArgsConstructor
+	private static class Project {
+
+		private String repositoryName;
+		private String updateCacheWorkflowId;
+		private String groupId;
+		private String artifactId;
+	}
 }

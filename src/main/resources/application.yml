@@ -8,7 +8,13 @@ nexus-connector.cache.day-of-the-month-from-which-to-leave: ${NEXUS_CONNECTOR_CA
 github-connector.host: ${GITHUB_CONNECTOR_HOST:api.github.com}
 github-connector.authorization.token: ${GITHUB_CONNECTOR_AUTHORIZATION_TOKEN}
 github-connector.authorization.token.type: ${GITHUB_CONNECTOR_AUTHORIZATION_TOKEN_TYPE:Bearer}
-github-connector.projects-info: ${GITHUB_CONNECTOR_PROJECTS_INFO:burningwave/core/jvm-driver/graph/tools}
+github-connector.projects-info: ${GITHUB_CONNECTOR_PROJECTS_INFO:burningwave:org.burningwave/core:core\${github-connector.projects-info.core.update-remote-cache-workflow-id}/jvm-driver:jvm-driver\${github-connector.projects-info.jvm-driver.update-remote-cache-workflow-id}/graph:graph\${github-connector.projects-info.graph.update-remote-cache-workflow-id}/tools:tools\${github-connector.projects-info.tools.update-remote-cache-workflow-id}/burningwave.github.io\${github-connector.projects-info.burningwave-github-io.update-remote-cache-workflow-id}}
+github-connector.projects-info.core.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_CORE_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1681380218}
+github-connector.projects-info.jvm-driver.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_JVM_DRIVER_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1681469283}
+github-connector.projects-info.graph.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_GRAPH_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1681389259}
+github-connector.projects-info.tools.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_TOOLS_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1681441155}
+github-connector.projects-info.burningwave-github-io.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_BURNINGWAVE_GITHUB_IO_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1681434877}
+github-connector.cache.listener.enabled: ${GITHUB_CONNECTOR_CACHE_LISTENER_ENABLED:true}
 github-connector.cache.ttl: ${GITHUB_CONNECTOR_CACHE_TTL:86400000}
 
 application-self-connector.host: ${APPLICATION_SELF_CONNECTOR_HOST:burningwave.herokuapp.com}

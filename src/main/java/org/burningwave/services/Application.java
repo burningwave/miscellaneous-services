@@ -43,7 +43,12 @@ import org.springframework.web.util.UriComponentsBuilder;
 @EnableScheduling
 @EnableAsync
 public class Application {
+	private final static org.slf4j.Logger logger;
 	private static ApplicationContext applicationContext;
+
+	static {
+		logger = org.slf4j.LoggerFactory.getLogger(Application.class);
+	}
 
 	public static void main(String[] args) throws IOException {
 		applicationContext = SpringApplication.run(Application.class, args);
@@ -109,11 +114,19 @@ public class Application {
 
 	@Bean("gitHubConnector")
 	GitHubConnector gitHubConnector(
-		@Qualifier("gitHubConnector.config") Map<String, String> configMap
+		@Qualifier("gitHubConnector.config") Map<String, String> configMap,
+		SimpleCache cache
 	) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
 		Map<String, Object> configuration = new HashMap<>();
 		configuration.putAll(configMap);
-		return new GitHubConnector(configuration);
+		String cacheListenerFlag = (String)configuration.get("cache.listener.enabled");
+		GitHubConnector gitHubConnector = new GitHubConnector(configuration);
+		if (cacheListenerFlag != null && Boolean.valueOf(cacheListenerFlag)) {
+			gitHubConnector.listenTo(cache);
+		} else {
+			logger.info("gitHubConnector.cache.listener is disabled");
+		}
+		return gitHubConnector;
 	}
 
 	@Bean("applicationSelfConnector.config")

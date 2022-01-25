@@ -18,7 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-public class DBBasedCache implements SimpleCache {
+public class DBBasedCache extends SimpleCache.Abst {
 	private final static org.slf4j.Logger logger;
 
 	@Autowired
