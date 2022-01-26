@@ -24,6 +24,7 @@ import javax.xml.bind.JAXBException;
 
 import org.burningwave.SimpleCache;
 import org.burningwave.Throwables;
+import org.burningwave.Utility;
 import org.burningwave.services.NexusConnector.GetStatsOutput;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -53,6 +54,8 @@ public class GitHubConnector implements SimpleCache.Listener {
 	@Autowired
     private SimpleCache cache;
 
+	@Autowired
+    private Utility utility;
 
     static {
     	logger = org.slf4j.LoggerFactory.getLogger(GitHubConnector.class);
@@ -256,29 +259,39 @@ public class GitHubConnector implements SimpleCache.Listener {
 	@Override
 	public <T extends Serializable> void processChangeNotification(String key, T newValue, T oldValue) {
 		if (newValue instanceof GetStatsOutput) {
-			GetStatsOutput value = (GetStatsOutput)newValue;
-			for (Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
-				Project project = usernameAndRepositories.getValue().stream().filter(prj ->
-					value.getData().getGroupId().equals(prj.getGroupId()) &&
-					value.getData().getArtifactId().equals(prj.getRepositoryName())
-				).findFirst().orElse(null);
-				if (project != null) {
-					UriComponents uriComponents = reposComponentsBuilder.get()
-						.pathSegment(
-							usernameAndRepositories.getKey(),
-							project.getRepositoryName(),
-							"actions", "runs",
-							project.getUpdateCacheWorkflowId(),
-							"rerun"
-						).build();
-					restTemplate.exchange(
-						uriComponents.toString(),
-						HttpMethod.POST,
-						new HttpEntity<String>(headers),
-						Map.class
-					);
-					logger.info("Remote cache {}/{} successfully updated", usernameAndRepositories.getKey(), project.getRepositoryName());
+			synchronized (this) {
+				Calendar lastExecutionDate = cache.load("remoteCachesUpdate.lastExecution");
+				Calendar newDate = utility.newCalendarAtTheStartOfTheMonth();
+				if (lastExecutionDate == null ||
+					lastExecutionDate.get(Calendar.YEAR) != newDate.get(Calendar.YEAR) ||
+					lastExecutionDate.get(Calendar.MONTH) != newDate.get(Calendar.MONTH)
+				) {
+					updateRemoteCaches();
+					cache.store("remoteCachesUpdate.lastExecution", newDate);
 				}
+			}
+		}
+	}
+
+
+	private void updateRemoteCaches() {
+		for (Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
+			for (Project project : usernameAndRepositories.getValue()) {
+				UriComponents uriComponents = reposComponentsBuilder.get()
+					.pathSegment(
+						usernameAndRepositories.getKey(),
+						project.getRepositoryName(),
+						"actions", "runs",
+						project.getUpdateCacheWorkflowId(),
+						"rerun"
+					).build();
+				restTemplate.exchange(
+					uriComponents.toString(),
+					HttpMethod.POST,
+					new HttpEntity<String>(headers),
+					Map.class
+				);
+				logger.info("Remote cache {}/{} successfully updated", usernameAndRepositories.getKey(), project.getRepositoryName());
 			}
 		}
 	}

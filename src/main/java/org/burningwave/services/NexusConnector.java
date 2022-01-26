@@ -33,6 +33,7 @@ import javax.xml.bind.annotation.XmlTransient;
 
 import org.burningwave.SimpleCache;
 import org.burningwave.Throwables;
+import org.burningwave.Utility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -60,6 +61,9 @@ public class NexusConnector {
 
 	@Autowired
     private SimpleCache cache;
+
+	@Autowired
+    private Utility utility;
 
 
     static {
@@ -112,19 +116,14 @@ public class NexusConnector {
 				}
 				return Throwables.rethrow(exc);
 			}
-    		Calendar newDate = new GregorianCalendar();
-			newDate.setTime(new Date());
+    		Calendar newDate = utility.newCalendarAtTheStartOfTheMonth();
 			newDate.set(Calendar.DATE, dayOfTheMonthFromWhichToLeave);
-			newDate.set(Calendar.HOUR_OF_DAY, 0);
-			newDate.set(Calendar.MINUTE, 0);
-			newDate.set(Calendar.SECOND, 0);
-			newDate.set(Calendar.MILLISECOND, 0);
-			Runnable storer = () -> cache.store(key, newOutput);
+			Runnable storer = () -> cache.storeAndNotify(key, newOutput, oldOutput);
     		if (oldOutput != null && oldOutput.getData().getTotal() == newOutput.getData().getTotal()) {
     			newDate.setTime(oldOutput.getTime());
     			newDate.add(Calendar.DATE, 1);
-    			if (isStartDateEqualsToDefaultValue(input) && isMonthsEqualsToDefaultValue(input)) {
-    				storer = () -> cache.storeAndNotify(key, newOutput, oldOutput);
+    			if (!isStartDateEqualsToDefaultValue(input) && !isMonthsEqualsToDefaultValue(input)) {
+    				storer = () -> cache.store(key, newOutput);
     			}
     		}
     		newOutput.setTime(newDate.getTime());
