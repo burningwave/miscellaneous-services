@@ -53,7 +53,7 @@ public class NexusConnector {
 	private HttpEntity<String> entity;
 	private JAXBContext jaxbContext;
 	private Supplier<UriComponentsBuilder> getStatsUriComponentsBuilder;
-	private Collection<Project> allProjectsInfo;
+	private Collection<Group> allGroupsInfo;
 	private Map<String, GetStatsOutput> inMemoryCache;
 	private long timeToLiveForInMemoryCache;
 	private int dayOfTheMonthFromWhichToLeave;
@@ -73,7 +73,7 @@ public class NexusConnector {
         entity = new HttpEntity<String>(headers);
         jaxbContext = JAXBContext.newInstance(GetStatsOutput.class);
         getStatsUriComponentsBuilder = () -> UriComponentsBuilder.newInstance().scheme("https").host((String)configMap.get("host")).path("/service/local/stats/timeline").queryParam("t", "raw");
-        allProjectsInfo = retrieveProjectsInfo(configMap);
+        allGroupsInfo = retrieveGroupsInfo(configMap);
         inMemoryCache = new ConcurrentHashMap<>();
         timeToLiveForInMemoryCache = Long.parseLong((String)configMap.get("cache.ttl"));
         dayOfTheMonthFromWhichToLeave = Integer.parseInt((String)configMap.get("cache.day-of-the-month-from-which-to-leave"));
@@ -123,7 +123,7 @@ public class NexusConnector {
     		if (oldOutput != null && oldOutput.getData().getTotal() == newOutput.getData().getTotal()) {
     			newDate.setTime(oldOutput.getTime());
     			newDate.add(Calendar.DATE, 1);
-    			if (!input.monthsFieldHasBeenSetFromExternal() && !input.startDateFieldHasBeenSetFromExternal()) {
+    			if (!isMonthsEqualsToDefaultValue(input) && !isStartDateEqualsToDefaultValue(input)) {
     				storer = () -> cache.store(key, newOutput);
     			}
     		}
@@ -135,14 +135,42 @@ public class NexusConnector {
 
     }
 
-	private Collection<Project> retrieveProjectsInfo(Map<String, Object> configMap) throws ParseException {
+	private boolean isMonthsEqualsToDefaultValue(GetStatsInput input) {
+		return computeDefaultMonths(input.getStartDate()) == input.getMonths();
+	}
+
+	private boolean isStartDateEqualsToDefaultValue(GetStatsInput input) {
+		Group group = getGroup(input);
+		return group.getStartDate().getTime().equals(input.getStartDate());
+	}
+
+	private int computeDefaultMonths(Date startDate) {
+		Calendar today = new GregorianCalendar();
+        today.setTime(new Date());
+        Calendar startDateAsCalendar = new GregorianCalendar();
+        startDateAsCalendar.setTime(startDate);
+        return
+        	((today.get(Calendar.YEAR) - startDateAsCalendar.get(Calendar.YEAR)) *12 ) +
+        	today.get(Calendar.MONTH) - startDateAsCalendar.get(Calendar.MONTH);
+	}
+
+	private Group getGroup(GetStatsInput input) {
+		for (Group groupInfo : allGroupsInfo) {
+			if (groupInfo.getGroupId().equals(input.getGroupId()) && groupInfo.getArtifactIds().containsKey(input.getArtifactId())) {
+				return groupInfo;
+			}
+		}
+		return null;
+	}
+
+	private Collection<Group> retrieveGroupsInfo(Map<String, Object> configMap) throws ParseException {
         String projectsInfoAsString = (String)configMap.get("projects-info");
         String[] projectsInfoAsSplittedString = projectsInfoAsString.split(";");
         Calendar startDate = new GregorianCalendar();
         startDate.setTime(new SimpleDateFormat("yyyy-MM").parse(projectsInfoAsSplittedString[0]));
-        Collection<Project> projectsInfo = new ArrayList<>();
+        Collection<Group> projectsInfo = new ArrayList<>();
         for (int i = 1; i < projectsInfoAsSplittedString.length; i++) {
-        	Project project = new Project();
+        	Group project = new Group();
         	project.setStartDate(startDate);
         	String[] projectInfoAsSplittedString = projectsInfoAsSplittedString[i].split("/");
         	project.setId(projectInfoAsSplittedString[0]);
@@ -164,11 +192,13 @@ public class NexusConnector {
         return projectsInfo;
 	}
 
-	private GetStatsInput toInput(Project projectInfo, String artifactId, Date startDate, Integer months) {
+	private GetStatsInput toInput(Group projectInfo, String artifactId, Date startDate, Integer months) {
+		startDate = startDate != null ? startDate : projectInfo.getStartDate().getTime();
 		GetStatsInput input = new GetStatsInput(
 			projectInfo.getId(),
 			projectInfo.getGroupId(),
-			startDate != null? startDate : projectInfo.getStartDate().getTime()
+			startDate,
+			months != null ? months : computeDefaultMonths(startDate)
 		);
 		if (artifactId != null) {
 			input.setArtifactId(projectInfo.getArtifactIds().get(artifactId));
@@ -186,11 +216,10 @@ public class NexusConnector {
 			input.getGroupId() + ";" +
 			input.getArtifactId() + ";" +
 			new SimpleDateFormat("yyyyMM").format(input.getStartDate()) + ";" +
-			(input.monthsFieldHasBeenSetFromExternal() ?
-				input.getMonths():
-				"diffFromToday");
+			(isMonthsEqualsToDefaultValue(input) ?
+				"diffFromToday":
+				input.getMonths());
 	}
-
 
 	private GetStatsOutput callGetStatsRemote(GetStatsInput input) throws JAXBException {
 		UriComponents uriComponents =
@@ -214,7 +243,7 @@ public class NexusConnector {
 	public GetAllStatsOutput getAllStats(String artifactId, Date startDate, Integer months)
 			throws ParseException, JAXBException, InterruptedException, ExecutionException {
 		Collection<CompletableFuture<GetStatsOutput>> outputSuppliers = new ArrayList<>();
-		for (Project projectInfo : allProjectsInfo) {
+		for (Group projectInfo : allGroupsInfo) {
 			if (artifactId != null && !projectInfo.getArtifactIds().containsKey(artifactId)) {
 				continue;
 			}
@@ -274,20 +303,12 @@ public class NexusConnector {
     	private String artifactId;
     	private Date startDate;
     	private Integer months;
-    	private boolean monthsFieldHasBeenSetFromExternal;
-    	private boolean startDateFieldHasBeenSetFromExternal;
 
-    	private GetStatsInput(String projectId, String groupId, Date startDate) {
+    	private GetStatsInput(String projectId, String groupId, Date startDate, Integer months) {
     		this.projectId = projectId;
     		this.groupId = groupId;
     		this.startDate = startDate;
-    		Calendar today = new GregorianCalendar();
-            today.setTime(new Date());
-            Calendar startDateAsCalendar = new GregorianCalendar();
-            startDateAsCalendar.setTime(startDate);
-            this.months =
-            	((today.get(Calendar.YEAR) - startDateAsCalendar.get(Calendar.YEAR))*12) +
-            	today.get(Calendar.MONTH) - startDateAsCalendar.get(Calendar.MONTH);
+    		this.months = months;
     	}
 
 
@@ -311,7 +332,6 @@ public class NexusConnector {
 		}
 		public GetStatsInput setStartDate(Date startDate) {
 			this.startDate = startDate;
-			monthsFieldHasBeenSetFromExternal = true;
 			return this;
 		}
 		public Integer getMonths() {
@@ -319,14 +339,7 @@ public class NexusConnector {
 		}
 		public GetStatsInput setMonths(Integer months) {
 			this.months = months;
-			monthsFieldHasBeenSetFromExternal = true;
 			return this;
-		}
-		boolean monthsFieldHasBeenSetFromExternal() {
-			return monthsFieldHasBeenSetFromExternal;
-		}
-		boolean startDateFieldHasBeenSetFromExternal() {
-			return startDateFieldHasBeenSetFromExternal;
 		}
     }
 
@@ -401,7 +414,7 @@ public class NexusConnector {
 	@Getter
 	@Setter
 	@NoArgsConstructor
-	private static class Project {
+	private static class Group {
 
 		private Calendar startDate;
 		private String id;

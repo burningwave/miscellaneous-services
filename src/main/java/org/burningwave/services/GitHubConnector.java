@@ -199,7 +199,7 @@ public class GitHubConnector implements SimpleCache.Listener {
 					input.setRepositoyName(repositoryName);
 					outputSuppliers.add(
 						CompletableFuture.supplyAsync(() ->
-						function.apply(input)
+							function.apply(input)
 						)
 					);
 				}
