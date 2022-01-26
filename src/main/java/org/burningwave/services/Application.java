@@ -34,11 +34,14 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @SpringBootApplication
+//Uncomment this to use the DBBasedCache
 //@EnableAutoConfiguration(exclude = {
 //	org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
 //	org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
 //})
+//Comment this to use the DBBasedCache
 @EnableJpaRepositories(basePackages = {"org.burningwave"}, considerNestedRepositories = true)
+//Comment this to use the DBBasedCache
 @EntityScan(basePackages = {"org.burningwave"})
 @EnableScheduling
 @EnableAsync
