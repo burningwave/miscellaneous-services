@@ -123,7 +123,9 @@ public class NexusConnector {
     		if (oldOutput != null && oldOutput.getData().getTotal() == newOutput.getData().getTotal()) {
     			newDate.setTime(oldOutput.getTime());
     			newDate.add(Calendar.DATE, 1);
-    			storer = () -> cache.store(key, newOutput);
+    			if (!input.monthsFieldHasBeenSetFromExternal() && !input.startDateFieldHasBeenSetFromExternal()) {
+    				storer = () -> cache.store(key, newOutput);
+    			}
     		}
     		newOutput.setTime(newDate.getTime());
     		storer.run();
@@ -273,6 +275,7 @@ public class NexusConnector {
     	private Date startDate;
     	private Integer months;
     	private boolean monthsFieldHasBeenSetFromExternal;
+    	private boolean startDateFieldHasBeenSetFromExternal;
 
     	private GetStatsInput(String projectId, String groupId, Date startDate) {
     		this.projectId = projectId;
@@ -308,6 +311,7 @@ public class NexusConnector {
 		}
 		public GetStatsInput setStartDate(Date startDate) {
 			this.startDate = startDate;
+			monthsFieldHasBeenSetFromExternal = true;
 			return this;
 		}
 		public Integer getMonths() {
@@ -320,6 +324,9 @@ public class NexusConnector {
 		}
 		boolean monthsFieldHasBeenSetFromExternal() {
 			return monthsFieldHasBeenSetFromExternal;
+		}
+		boolean startDateFieldHasBeenSetFromExternal() {
+			return startDateFieldHasBeenSetFromExternal;
 		}
     }
 
@@ -391,7 +398,9 @@ public class NexusConnector {
 
 	}
 
-	@Getter @Setter @NoArgsConstructor
+	@Getter
+	@Setter
+	@NoArgsConstructor
 	private static class Project {
 
 		private Calendar startDate;
