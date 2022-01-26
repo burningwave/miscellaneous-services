@@ -39,6 +39,18 @@
 			<artifactId>core</artifactId>
 			<version>12.43.1</version>
 		</dependency>
+		
+		<dependency>
+		    <groupId>org.burningwave</groupId>
+		    <artifactId>core</artifactId>
+		    <version>12.43.1</version>
+		    <exclusions>
+		        <exclusion>
+		            <groupId>io.github.toolfactory</groupId>
+		            <artifactId>narcissus</artifactId>
+		        </exclusion>
+		    </exclusions>
+		</dependency>
 				
 		<dependency>
 			<groupId>org.projectlombok</groupId>
