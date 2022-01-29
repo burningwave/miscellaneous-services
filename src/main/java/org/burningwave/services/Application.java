@@ -81,7 +81,7 @@ public class Application {
 
 	@Bean
 	public Class<StaticComponentContainer> staticComponentContainer(@Qualifier("burningwave.core.staticComponentContainer.config") Map<String, String> configMap) {
-		StaticComponentContainer.Configuration.add(configMap);
+		StaticComponentContainer.Configuration.Default.add(configMap);
 		return StaticComponentContainer.class;
 	}
 
