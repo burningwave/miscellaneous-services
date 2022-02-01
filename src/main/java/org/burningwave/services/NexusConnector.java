@@ -96,7 +96,6 @@ public class NexusConnector {
 		if (output == null) {
 			output = cache.load(key);
 			if (output != null) {
-				logger.info("Object with id '{}' loaded from physical cache", key);
 				inMemoryCache.put(key, output);
 			}
 		}

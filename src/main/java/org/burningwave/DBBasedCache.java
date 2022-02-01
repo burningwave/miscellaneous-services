@@ -46,6 +46,7 @@ public class DBBasedCache extends SimpleCache.Abst {
 			Throwables.rethrow(exc);
 		}
 		repository.save(cacheItem);
+		logger.info("Object with id '{}' stored in the physical cache", key);
 	}
 
 	@Override
@@ -53,7 +54,9 @@ public class DBBasedCache extends SimpleCache.Abst {
 		Item cacheItem = repository.findByKey(key);
 		if (cacheItem != null) {
 			try {
-				return utility.deserialize(cacheItem.getValue());
+				T effectiveItem = utility.deserialize(cacheItem.getValue());
+				logger.info("Object with id '{}' loaded from physical cache", key);
+				return effectiveItem;
 			} catch (IOException | ClassNotFoundException exc) {
 				Throwables.rethrow(exc);
 			}
