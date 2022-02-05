@@ -17,6 +17,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 public class DBBasedCache extends SimpleCache.Abst {
 	private final static org.slf4j.Logger logger;
@@ -72,7 +73,10 @@ public class DBBasedCache extends SimpleCache.Abst {
 
 	@Entity
 	@Table(name = "CacheItem")
-	@Getter @Setter @NoArgsConstructor
+	@NoArgsConstructor
+	@Getter
+	@Setter
+	@ToString
 	public static class Item implements Serializable {
 
 		private static final long serialVersionUID = 3154577811258150600L;

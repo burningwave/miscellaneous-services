@@ -39,6 +39,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 public class GitHubConnector implements SimpleCache.Listener {
 
@@ -299,6 +300,7 @@ public class GitHubConnector implements SimpleCache.Listener {
 	@Setter
 	@NoArgsConstructor
 	@AllArgsConstructor
+	@ToString
 	private static class Project {
 
 		private String repositoryName;

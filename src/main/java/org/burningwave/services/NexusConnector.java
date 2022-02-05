@@ -356,6 +356,7 @@ public class NexusConnector {
     @NoArgsConstructor
     @Getter
     @Setter
+    @ToString
     public static class GetAllStatsOutput implements Serializable {
 
 		private static final long serialVersionUID = 287571224336835644L;
@@ -370,6 +371,7 @@ public class NexusConnector {
 	@NoArgsConstructor
 	@Getter
 	@Setter
+	@ToString
 	public static class GetStatsOutput implements Serializable {
 		private static final long serialVersionUID = 3642117423686944572L;
 
@@ -383,6 +385,7 @@ public class NexusConnector {
 		@NoArgsConstructor
 		@Getter
 		@Setter
+		@ToString
 		public static class Data implements Serializable {
 
 			private static final long serialVersionUID = -5272099947960951863L;
@@ -409,6 +412,7 @@ public class NexusConnector {
 			@NoArgsConstructor
 			@Getter
 			@Setter
+			@ToString
 			public static class Timeline implements Serializable {
 
 				private static final long serialVersionUID = 2507704512441988141L;
