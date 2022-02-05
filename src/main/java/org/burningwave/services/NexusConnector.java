@@ -246,12 +246,21 @@ public class NexusConnector {
 		for (Group projectInfo : allGroupsInfo) {
 			if (artifactId != null && !projectInfo.getArtifactIds().containsKey(artifactId)) {
 				continue;
+			} else if (artifactId == null) {
+				for (Map.Entry<String, String> artifactEntry : projectInfo.getArtifactIds().entrySet()) {
+					outputSuppliers.add(CompletableFuture.supplyAsync(() ->
+						getStats(
+							toInput(projectInfo, artifactEntry.getKey(), startDate, months)
+						)
+					));
+				}
+			} else {
+				outputSuppliers.add(CompletableFuture.supplyAsync(() ->
+					getStats(
+						toInput(projectInfo, artifactId, startDate, months)
+					)
+				));
 			}
-			outputSuppliers.add(CompletableFuture.supplyAsync(() ->
-				getStats(
-					toInput(projectInfo, artifactId, startDate, months)
-				)
-			));
 		}
 		GetAllStatsOutput output = merge(outputSuppliers.stream().map(outputSupplier -> outputSupplier.join()).collect(Collectors.toList()));
 		return output;
