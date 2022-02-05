@@ -14,7 +14,7 @@ github-connector.projects-info.jvm-driver.update-remote-cache-workflow-id: ${GIT
 github-connector.projects-info.graph.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_GRAPH_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1750722174}
 github-connector.projects-info.tools.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_TOOLS_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1750742416}
 github-connector.projects-info.burningwave-github-io.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_BURNINGWAVE_GITHUB_IO_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1750749736}
-github-connector.cache.listener.enabled: ${GITHUB_CONNECTOR_CACHE_LISTENER_ENABLED:true}
+github-connector.cache.listener.enabled: ${GITHUB_CONNECTOR_CACHE_LISTENER_ENABLED:false}
 github-connector.cache.ttl: ${GITHUB_CONNECTOR_CACHE_TTL:86400000}
 
 application-self-connector.host: ${APPLICATION_SELF_CONNECTOR_HOST:burningwave.herokuapp.com}
