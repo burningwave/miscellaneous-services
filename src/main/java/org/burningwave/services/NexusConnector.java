@@ -46,6 +46,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 public class NexusConnector {
 	private final static org.slf4j.Logger logger;
@@ -134,18 +135,12 @@ public class NexusConnector {
     }
 
 	private boolean isMonthsEqualsToDefaultValue(GetStatsInput input) {
-		Date startDate = input.getStartDate();
-		if (startDate == null) {
-			startDate = getGroup(input).getStartDate().getTime();
-		}
-		return computeDefaultMonths(startDate) == input.getMonths();
+		return computeDefaultMonths(input.getStartDate()) == input.getMonths();
 	}
 
 	private boolean isStartDateEqualsToDefaultValue(GetStatsInput input) {
-		if (input.getStartDate() == null) {
-			return true;
-		}
 		Group group = getGroup(input);
+		logger.info("group: {}", group);
 		return group.getStartDate().getTime().equals(input.getStartDate());
 	}
 
@@ -419,6 +414,7 @@ public class NexusConnector {
 	@Getter
 	@Setter
 	@NoArgsConstructor
+	@ToString
 	private static class Group {
 
 		private Calendar startDate;
