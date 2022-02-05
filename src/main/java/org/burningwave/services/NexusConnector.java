@@ -155,11 +155,11 @@ public class NexusConnector {
 
 	private Group getGroup(GetStatsInput input) {
 		for (Group groupInfo : allGroupsInfo) {
-			if (groupInfo.getGroupId().equals(input.getGroupId()) && groupInfo.getArtifactIds().containsKey(input.getArtifactId())) {
+			if (groupInfo.getGroupId().equals(input.getGroupId()) && groupInfo.getArtifactIds().containsValue(input.getArtifactId())) {
 				return groupInfo;
 			}
 		}
-		logger.info("Could not retrieve group for input values {} - {}", input.getGroupId(), input.getArtifactId());
+		logger.error("Could not retrieve group for input values {} - {}", input.getGroupId(), input.getArtifactId());
 		return null;
 	}
 
