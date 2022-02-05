@@ -245,7 +245,7 @@ public class NexusConnector {
 		Collection<CompletableFuture<GetStatsOutput>> outputSuppliers = new ArrayList<>();
 		for (Group projectInfo : allGroupsInfo) {
 			if (artifactId != null && !projectInfo.getArtifactIds().containsKey(artifactId)) {
-				logger.warn("{} not found", artifactId);
+				logger.warn("{} not found under groupId {}", artifactId, projectInfo.getGroupId());
 				continue;
 			} else if (artifactId == null) {
 				for (Map.Entry<String, String> artifactEntry : projectInfo.getArtifactIds().entrySet()) {
