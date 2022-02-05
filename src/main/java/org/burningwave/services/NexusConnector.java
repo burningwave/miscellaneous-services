@@ -138,7 +138,6 @@ public class NexusConnector {
 		if (startDate == null) {
 			startDate = getGroup(input).getStartDate().getTime();
 		}
-
 		return computeDefaultMonths(startDate) == input.getMonths();
 	}
 
