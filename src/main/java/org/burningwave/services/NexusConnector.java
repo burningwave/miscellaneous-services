@@ -140,7 +140,6 @@ public class NexusConnector {
 
 	private boolean isStartDateEqualsToDefaultValue(GetStatsInput input) {
 		Group group = getGroup(input);
-		logger.info("group: {}", group);
 		return group.getStartDate().getTime().equals(input.getStartDate());
 	}
 
@@ -160,6 +159,7 @@ public class NexusConnector {
 				return groupInfo;
 			}
 		}
+		logger.info("Could not retrieve group for input values {} - {}", input.getGroupId(), input.getArtifactId());
 		return null;
 	}
 
