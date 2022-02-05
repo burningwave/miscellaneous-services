@@ -244,10 +244,7 @@ public class NexusConnector {
 			throws ParseException, JAXBException, InterruptedException, ExecutionException {
 		Collection<CompletableFuture<GetStatsOutput>> outputSuppliers = new ArrayList<>();
 		for (Group projectInfo : allGroupsInfo) {
-			if (artifactId != null && !projectInfo.getArtifactIds().containsKey(artifactId)) {
-				logger.warn("artifactId '{}' not found under groupId '{}'", artifactId, projectInfo.getGroupId());
-				continue;
-			} else if (artifactId == null) {
+			if (artifactId == null) {
 				for (Map.Entry<String, String> artifactEntry : projectInfo.getArtifactIds().entrySet()) {
 					outputSuppliers.add(CompletableFuture.supplyAsync(() ->
 						getStats(
@@ -255,12 +252,15 @@ public class NexusConnector {
 						)
 					));
 				}
-			} else {
+			} else if (projectInfo.getArtifactIds().containsKey(artifactId)) {
 				outputSuppliers.add(CompletableFuture.supplyAsync(() ->
 					getStats(
 						toInput(projectInfo, artifactId, startDate, months)
 					)
 				));
+			} else {
+				logger.warn("artifactId '{}' not found under groupId '{}'", artifactId, projectInfo.getGroupId());
+				continue;
 			}
 		}
 		GetAllStatsOutput output = merge(outputSuppliers.stream().map(outputSupplier -> outputSupplier.join()).collect(Collectors.toList()));
