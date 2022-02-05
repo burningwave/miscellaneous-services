@@ -134,10 +134,18 @@ public class NexusConnector {
     }
 
 	private boolean isMonthsEqualsToDefaultValue(GetStatsInput input) {
-		return computeDefaultMonths(input.getStartDate()) == input.getMonths();
+		Date startDate = input.getStartDate();
+		if (startDate == null) {
+			startDate = getGroup(input).getStartDate().getTime();
+		}
+
+		return computeDefaultMonths(startDate) == input.getMonths();
 	}
 
 	private boolean isStartDateEqualsToDefaultValue(GetStatsInput input) {
+		if (input.getStartDate() == null) {
+			return true;
+		}
 		Group group = getGroup(input);
 		return group.getStartDate().getTime().equals(input.getStartDate());
 	}
