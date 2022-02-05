@@ -43,6 +43,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -194,19 +195,13 @@ public class NexusConnector {
 
 	private GetStatsInput toInput(Group projectInfo, String artifactId, Date startDate, Integer months) {
 		startDate = startDate != null ? startDate : projectInfo.getStartDate().getTime();
-		GetStatsInput input = new GetStatsInput(
+		return new GetStatsInput(
 			projectInfo.getId(),
 			projectInfo.getGroupId(),
+			artifactId != null? projectInfo.getArtifactIds().get(artifactId) : null,
 			startDate,
 			months != null ? months : computeDefaultMonths(startDate)
 		);
-		if (artifactId != null) {
-			input.setArtifactId(projectInfo.getArtifactIds().get(artifactId));
-		}
-		if (months != null) {
-			input.setMonths(months);
-		}
-		return input;
 	}
 
 	private String getKey(GetStatsInput input) {
@@ -306,6 +301,11 @@ public class NexusConnector {
 		}
 	}
 
+	@NoArgsConstructor
+	@AllArgsConstructor
+	@Getter
+	@Setter
+	@ToString
     public static class GetStatsInput {
 
     	private String projectId;
@@ -314,43 +314,6 @@ public class NexusConnector {
     	private Date startDate;
     	private Integer months;
 
-    	private GetStatsInput(String projectId, String groupId, Date startDate, Integer months) {
-    		this.projectId = projectId;
-    		this.groupId = groupId;
-    		this.startDate = startDate;
-    		this.months = months;
-    	}
-
-
-		public String getProjectId() {
-			return projectId;
-		}
-
-		public String getGroupId() {
-			return groupId;
-		}
-
-		public String getArtifactId() {
-			return artifactId;
-		}
-		public GetStatsInput setArtifactId(String artifactId) {
-			this.artifactId = artifactId;
-			return this;
-		}
-		public Date getStartDate() {
-			return startDate;
-		}
-		public GetStatsInput setStartDate(Date startDate) {
-			this.startDate = startDate;
-			return this;
-		}
-		public Integer getMonths() {
-			return months;
-		}
-		public GetStatsInput setMonths(Integer months) {
-			this.months = months;
-			return this;
-		}
     }
 
     @NoArgsConstructor
