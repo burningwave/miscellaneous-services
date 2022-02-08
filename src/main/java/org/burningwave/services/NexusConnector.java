@@ -163,12 +163,12 @@ public class NexusConnector {
 	private Collection<Group.Info> retrieveGroupsInfo(Map<String, Object> configMap) throws ParseException {
         String projectsInfoAsString = (String)configMap.get("projects-info");
         String[] projectsInfoAsSplittedString = projectsInfoAsString.split(";");
-        Calendar startDate = new GregorianCalendar();
-        startDate.setTime(new SimpleDateFormat("yyyy-MM").parse(projectsInfoAsSplittedString[0]));
+        Calendar startDateAsCalendar = new GregorianCalendar();
+        startDateAsCalendar.setTime(new SimpleDateFormat("yyyy-MM").parse((String)configMap.get("projects-info.start-date")));
         Collection<Group.Info> projectsInfo = new ArrayList<>();
-        for (int i = 1; i < projectsInfoAsSplittedString.length; i++) {
+        for (int i = 0; i < projectsInfoAsSplittedString.length; i++) {
         	Group.Info project = new Group.Info();
-        	project.setStartDate(startDate);
+        	project.setStartDate(startDateAsCalendar);
         	String[] projectInfoAsSplittedString = projectsInfoAsSplittedString[i].split("/");
         	project.setId(projectInfoAsSplittedString[0]);
         	project.setGroupId(projectInfoAsSplittedString[1]);
@@ -311,7 +311,9 @@ public class NexusConnector {
 		private Collection<NexusConnector> nexusConnectors;
 
 		public Group(SimpleCache cache, Utility utility, Map<String, Object> configMap) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JAXBException, ParseException {
+			configMap = new LinkedHashMap<>(configMap);
 			Map<String, Map<String, Object>> allNexusConfigurations = new LinkedHashMap<>();
+			String startDate = (String)configMap.remove("projects-info.start-date");
 			for (Map.Entry<String, Object> confEntry : configMap.entrySet()) {
 				String[] mapEntryAsStringArray = confEntry.getKey().split("\\.", 2);
 				Map<String, Object> nexusConnectionConfig = allNexusConfigurations.computeIfAbsent(mapEntryAsStringArray[0], key -> new LinkedHashMap<>());
@@ -320,6 +322,7 @@ public class NexusConnector {
 			}
 			nexusConnectors = ConcurrentHashMap.newKeySet();
 			for (Map<String, Object> nexusConfiguration : allNexusConfigurations.values()) {
+				nexusConfiguration.put("projects-info.start-date", startDate);
 				NexusConnector nexusConnector = new NexusConnector(nexusConfiguration);
 				nexusConnector.utility = utility;
 				nexusConnector.cache = cache;
