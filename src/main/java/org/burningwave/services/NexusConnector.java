@@ -316,10 +316,15 @@ public class NexusConnector {
 			Map<String, Map<String, Object>> allNexusConfigurations = new LinkedHashMap<>();
 			String startDate = (String)configMap.remove("projects-info.start-date");
 			for (Map.Entry<String, Object> confEntry : configMap.entrySet()) {
-				String[] mapEntryAsStringArray = confEntry.getKey().split("\\.", 2);
+				String[] mapEntryAsStringArray;
+				if (confEntry.getKey().matches("\\d{0,}\\..*?")) {
+					mapEntryAsStringArray = confEntry.getKey().split("\\.", 2);
+					mapEntryAsStringArray = new String[]{"0", mapEntryAsStringArray[0]};
+				} else {
+					mapEntryAsStringArray = new String[]{"0", confEntry.getKey()};
+				}
 				Map<String, Object> nexusConnectionConfig = allNexusConfigurations.computeIfAbsent(mapEntryAsStringArray[0], key -> new LinkedHashMap<>());
 				nexusConnectionConfig.put(mapEntryAsStringArray[1], confEntry.getValue());
-				allNexusConfigurations.put(mapEntryAsStringArray[0], nexusConnectionConfig);
 			}
 			nexusConnectors = ConcurrentHashMap.newKeySet();
 			for (Map<String, Object> nexusConfiguration : allNexusConfigurations.values()) {
