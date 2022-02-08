@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import javax.persistence.NoResultException;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -338,13 +339,10 @@ public class NexusConnector {
 		public GetAllStatsOutput getAllStats(Set<String> groupIds, String artifactId, Date startDate, Integer months)
 				throws ParseException, JAXBException, InterruptedException, ExecutionException {
 			Collection<CompletableFuture<GetStatsOutput>> outputSuppliers = new ArrayList<>();
-			boolean groupIdWasFound = false;
 			for (NexusConnector nexusConnector : nexusConnectors) {
 				for (Project projectInfo : nexusConnector.allGroupsInfo) {
 					if (groupIds != null && !groupIds.contains(projectInfo.getGroupName())) {
 						continue;
-					} else if (!groupIdWasFound) {
-						groupIdWasFound = true;
 					}
 					if (artifactId == null) {
 						for (Map.Entry<String, String> artifactEntry : projectInfo.getArtifactIds().entrySet()) {
@@ -367,8 +365,8 @@ public class NexusConnector {
 				}
 			}
 			GetAllStatsOutput output = merge(outputSuppliers.stream().map(outputSupplier -> outputSupplier.join()).collect(Collectors.toList()));
-			if (!groupIdWasFound) {
-				throw new IllegalArgumentException("Group with Id '" + groupIds + "' not found");
+			if (output == null) {
+				throw new NoResultException("Found no result for Group with id '" + groupIds + "' and for artifact with id " + artifactId);
 			}
 			return output;
 		}
