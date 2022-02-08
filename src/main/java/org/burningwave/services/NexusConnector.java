@@ -319,7 +319,6 @@ public class NexusConnector {
 				String[] mapEntryAsStringArray;
 				if (confEntry.getKey().matches("\\d{0,}\\..*?")) {
 					mapEntryAsStringArray = confEntry.getKey().split("\\.", 2);
-					mapEntryAsStringArray = new String[]{"0", mapEntryAsStringArray[0]};
 				} else {
 					mapEntryAsStringArray = new String[]{"0", confEntry.getKey()};
 				}
