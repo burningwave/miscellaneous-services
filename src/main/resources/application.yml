@@ -1,9 +1,16 @@
-nexus-connector.host: ${NEXUS_CONNECTOR_HOST:oss.sonatype.org}
-nexus-connector.authorization.token: ${NEXUS_CONNECTOR_AUTHORIZATION_TOKEN}
-nexus-connector.authorization.token.type: ${NEXUS_CONNECTOR_AUTHORIZATION_TOKEN_TYPE:Basic}
-nexus-connector.projects-info: ${NEXUS_CONNECTOR_PROJECTS_INFO:2018-12;1dff4d3ebff6ae/org.burningwave/core/jvm-driver/graph/tools;863727bf94ba3c/com.github.burningwave/core:bw-core/graph:bw-graph;}
-nexus-connector.cache.ttl: ${NEXUS_CONNECTOR_CACHE_TTL:2592000000}
-nexus-connector.cache.day-of-the-month-from-which-to-leave: ${NEXUS_CONNECTOR_CACHE_DAY_OF_THE_MONTH_FROM_WHICH_TO_LEAVE:6}
+nexus-connector[0].host: ${NEXUS_CONNECTOR_0_HOST:oss.sonatype.org}
+nexus-connector[0].authorization.token: ${NEXUS_CONNECTOR_0_AUTHORIZATION_TOKEN}
+nexus-connector[0].authorization.token.type: ${NEXUS_CONNECTOR_0_AUTHORIZATION_TOKEN_TYPE:Basic}
+nexus-connector[0].projects-info: ${NEXUS_CONNECTOR_0_PROJECTS_INFO:2018-12;1dff4d3ebff6ae/org.burningwave/core/jvm-driver/graph/tools;863727bf94ba3c/com.github.burningwave/core:bw-core/graph:bw-graph;}
+nexus-connector[0].cache.ttl: ${NEXUS_CONNECTOR_0_CACHE_TTL:2592000000}
+nexus-connector[0].cache.day-of-the-month-from-which-to-leave: ${NEXUS_CONNECTOR_0_CACHE_DAY_OF_THE_MONTH_FROM_WHICH_TO_LEAVE:6}
+
+nexus-connector[1].host: ${NEXUS_CONNECTOR_1_HOST:s01.oss.sonatype.org}
+nexus-connector[1].authorization.token: ${NEXUS_CONNECTOR_1_AUTHORIZATION_TOKEN}
+nexus-connector[1].authorization.token.type: ${NEXUS_CONNECTOR_1_AUTHORIZATION_TOKEN_TYPE:Basic}
+nexus-connector[1].projects-info: ${NEXUS_CONNECTOR_1_PROJECTS_INFO:2021-12;455e122e7b9560/io.github.toolfactory/jvm-driver/narcissus}
+nexus-connector[1].cache.ttl: ${NEXUS_CONNECTOR_1_CACHE_TTL:2592000000}
+nexus-connector[1].cache.day-of-the-month-from-which-to-leave: ${NEXUS_CONNECTOR_1_CACHE_DAY_OF_THE_MONTH_FROM_WHICH_TO_LEAVE:6}
 
 github-connector.host: ${GITHUB_CONNECTOR_HOST:api.github.com}
 github-connector.authorization.token: ${GITHUB_CONNECTOR_AUTHORIZATION_TOKEN}

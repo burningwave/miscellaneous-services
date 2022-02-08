@@ -94,19 +94,21 @@ public class Application {
 		return (SimpleCache)Class.forName(configMap.get("type")).getDeclaredConstructor(Map.class).newInstance(configuration);
 	}
 
-	@Bean("nexusConnector.config")
+	@Bean("nexusConnectorGroup.config")
 	@ConfigurationProperties("nexus-connector")
 	public Map<String, String> nexusConnectorConfig(){
 		return new LinkedHashMap<>();
 	}
 
-	@Bean("nexusConnector")
-	public NexusConnector nexusConnector(
-		@Qualifier("nexusConnector.config") Map<String, String> configMap
+	@Bean("nexusConnectorGroup")
+	public NexusConnector.Group nexusConnector(
+		@Qualifier("cache") SimpleCache cache,
+		@Qualifier("utility") Utility utility,
+		@Qualifier("nexusConnectorGroup.config") Map<String, String> configMap
 	) throws UnsupportedEncodingException, JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
 		Map<String, Object> configuration = new HashMap<>();
 		configuration.putAll(configMap);
-		return new NexusConnector(configuration);
+		return new NexusConnector.Group(cache, utility, configuration);
 	}
 
 	@Bean("gitHubConnector.config")
@@ -170,6 +172,7 @@ public class Application {
 	        	.scheme("https")
 	        	.host((String)configMap.get("host"))
 	        	.path("/miscellaneous-services/stats/total-downloads")
+	        	.queryParam("groupId", "org.burningwave")
 	        	.queryParam("artifactId", "core");
 	    }
 
