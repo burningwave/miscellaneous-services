@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.persistence.NoResultException;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -366,7 +365,7 @@ public class NexusConnector {
 			}
 			GetAllStatsOutput output = merge(outputSuppliers.stream().map(outputSupplier -> outputSupplier.join()).collect(Collectors.toList()));
 			if (output == null) {
-				throw new NoResultException("Found no result for Group with id '" + groupIds + "' and for artifact with id " + artifactId);
+				throw new NoResultException("Found no result for Group with id '" + groupIds + "' and for artifact with id '" + artifactId + "'");
 			}
 			return output;
 		}
@@ -439,4 +438,5 @@ public class NexusConnector {
 		private Map<String, String> artifactIds;
 
 	}
+
 }
