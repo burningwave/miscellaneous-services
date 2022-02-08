@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -330,13 +331,13 @@ public class NexusConnector {
 			}
 		}
 
-		public GetAllStatsOutput getAllStats(String groupId, String artifactId, Date startDate, Integer months)
+		public GetAllStatsOutput getAllStats(Set<String> groupIds, String artifactId, Date startDate, Integer months)
 				throws ParseException, JAXBException, InterruptedException, ExecutionException {
 			Collection<CompletableFuture<GetStatsOutput>> outputSuppliers = new ArrayList<>();
 			boolean groupIdWasFound = false;
 			for (NexusConnector nexusConnector : nexusConnectors) {
 				for (Group.Info projectInfo : nexusConnector.allGroupsInfo) {
-					if (groupId != null && !projectInfo.getGroupId().equals(groupId)) {
+					if (groupIds != null && !groupIds.contains(projectInfo.getGroupId())) {
 						continue;
 					} else if (!groupIdWasFound) {
 						groupIdWasFound = true;
@@ -363,7 +364,7 @@ public class NexusConnector {
 			}
 			GetAllStatsOutput output = merge(outputSuppliers.stream().map(outputSupplier -> outputSupplier.join()).collect(Collectors.toList()));
 			if (!groupIdWasFound) {
-				throw new IllegalArgumentException("Group with Id '" + groupId + "' not found");
+				throw new IllegalArgumentException("Group with Id '" + groupIds + "' not found");
 			}
 			return output;
 		}
