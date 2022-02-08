@@ -129,6 +129,9 @@ public class Controller {
 				startDate != null ? new SimpleDateFormat("yyyy-MM").parse(startDate) : null,
 				months != null ? Integer.valueOf(months) : null
 			).getTotalDownloads();
+		} catch (IllegalArgumentException exc) {
+			logger.error(exc.getMessage());
+			return null;
 		} catch (Throwable exc) {
 			logger.error("Exception occurred", exc);
 			return null;

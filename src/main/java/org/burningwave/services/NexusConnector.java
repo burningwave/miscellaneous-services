@@ -365,7 +365,7 @@ public class NexusConnector {
 			}
 			GetAllStatsOutput output = merge(outputSuppliers.stream().map(outputSupplier -> outputSupplier.join()).collect(Collectors.toList()));
 			if (output == null) {
-				throw new NoResultException("Found no result for Group with id '" + groupIds + "' and for artifact with id '" + artifactId + "'");
+				throw new IllegalArgumentException("No items found for Group with id '" + groupIds + "' and for artifact with id '" + artifactId + "'");
 			}
 			return output;
 		}
