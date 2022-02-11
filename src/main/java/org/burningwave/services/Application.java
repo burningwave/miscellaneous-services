@@ -135,7 +135,7 @@ public class Application {
 	}
 
 	@Bean("applicationSelfConnector.config")
-	@ConfigurationProperties("application-self-connector")
+	@ConfigurationProperties("application.self-connector")
 	public Map<String, String> applicationSelfConnectorConfig(){
 		return new LinkedHashMap<>();
 	}

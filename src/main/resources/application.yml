@@ -1,5 +1,6 @@
-authorization.token: ${AUTHORIZATION_TOKEN}
-authorization.token.type: ${AUTHORIZATION_TOKEN_TYPE:Basic}
+application.authorization.token: ${APPLICATION_AUTHORIZATION_TOKEN}
+application.authorization.token.type: ${APPLICATION_AUTHORIZATION_TOKEN_TYPE:Basic}
+application.self-connector.host: ${APPLICATION_SELF_CONNECTOR_HOST:burningwave.herokuapp.com}
 
 nexus-connector.projects-info.start-date:  ${NEXUS_CONNECTOR_ALL_PROJECTS_INFO_START_DATE:2018-12}
 nexus-connector:
@@ -27,8 +28,6 @@ github-connector.projects-info.tools.update-remote-cache-workflow-id: ${GITHUB_C
 github-connector.projects-info.burningwave-github-io.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_BURNINGWAVE_GITHUB_IO_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1750749736}
 github-connector.cache.listener.enabled: ${GITHUB_CONNECTOR_CACHE_LISTENER_ENABLED:false}
 github-connector.cache.ttl: ${GITHUB_CONNECTOR_CACHE_TTL:86400000}
-
-application-self-connector.host: ${APPLICATION_SELF_CONNECTOR_HOST:burningwave.herokuapp.com}
 
 cache.type: ${CACHE_TYPE:org.burningwave.DBBasedCache}
 #cache.type: ${CACHE_TYPE:org.burningwave.FSBasedCache}

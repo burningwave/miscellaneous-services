@@ -128,7 +128,7 @@ public class Controller {
 		@RequestHeader(value = "Authorization", required = false) String authorizationToken,
 		HttpServletResponse response
 	) throws IOException {
-		if ((environment.getProperty("authorization.token.type") + " " + environment.getProperty("authorization.token")).equals(authorizationToken)) {
+		if ((environment.getProperty("application.authorization.token.type") + " " + environment.getProperty("application.authorization.token")).equals(authorizationToken)) {
 			nexusConnectorGroup.clearCache();
 			gitHubConnector.clearCache();
 			cache.clear();
