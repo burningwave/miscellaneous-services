@@ -11,8 +11,10 @@ import javax.xml.bind.JAXBException;
 
 import org.burningwave.Badge;
 import org.burningwave.SimpleCache;
+import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin
 public class Controller {
 	private final static org.slf4j.Logger logger;
+	private Environment environment;
 	private NexusConnector.Group nexusConnectorGroup;
 	private GitHubConnector gitHubConnector;
 	private SimpleCache cache;
@@ -31,7 +34,14 @@ public class Controller {
     	logger = org.slf4j.LoggerFactory.getLogger(Controller.class);
     }
 
-	public Controller(SimpleCache cache, Badge badge, NexusConnector.Group nexusConnectorGroup, GitHubConnector gitHubConnector) {
+	public Controller(
+		Environment environment,
+		SimpleCache cache,
+		Badge badge,
+		NexusConnector.Group nexusConnectorGroup,
+		GitHubConnector gitHubConnector
+	) {
+		this.environment = environment;
 		this.cache = cache;
 		this.badge = badge;
 		this.nexusConnectorGroup = nexusConnectorGroup;
@@ -114,10 +124,17 @@ public class Controller {
 	}
 
 	@GetMapping(path = "/clear-cache")
-	public void clearCache(HttpServletResponse response) throws IOException {
-		nexusConnectorGroup.clearCache();
-		gitHubConnector.clearCache();
-		cache.clear();
+	public void clearCache(
+		@RequestHeader(value = "Authorization", required = false) String authorizationToken,
+		HttpServletResponse response
+	) throws IOException {
+		if ((environment.getProperty("authorization.token.type") + " " + environment.getProperty("authorization.token")).equals(authorizationToken)) {
+			nexusConnectorGroup.clearCache();
+			gitHubConnector.clearCache();
+			cache.clear();
+		} else {
+			logger.error("Cannot clear cache: unauthorized");
+		}
 		response.sendRedirect("https://www.burningwave.org/");
 	}
 

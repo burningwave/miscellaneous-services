@@ -1,3 +1,6 @@
+authorization.token: ${AUTHORIZATION_TOKEN}
+authorization.token.type: ${AUTHORIZATION_TOKEN_TYPE:Basic}
+
 nexus-connector.projects-info.start-date:  ${NEXUS_CONNECTOR_ALL_PROJECTS_INFO_START_DATE:2018-12}
 nexus-connector:
    - host: ${NEXUS_CONNECTOR_0_HOST:oss.sonatype.org}
