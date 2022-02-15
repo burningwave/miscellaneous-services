@@ -58,8 +58,10 @@ public class Application {
 	}
 
 	@Bean("badge")
-	public Badge badge() {
-		return new Badge();
+	public Badge badge(
+		@Qualifier("utility") Utility utility
+	) {
+		return new Badge(utility);
 	}
 
 	@Bean("utility")

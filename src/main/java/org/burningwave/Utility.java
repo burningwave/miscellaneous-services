@@ -74,4 +74,9 @@ public class Utility {
 		calendar.set(Calendar.MILLISECOND, 0);
 		return calendar;
 	}
+
+	public String toPlaceHolder(String variable) {
+		return "${" + variable + "}";
+	}
+
 }
