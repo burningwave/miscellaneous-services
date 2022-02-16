@@ -1,5 +1,4 @@
-<script type='text/javascript' src='https://www.burningwave.org/wp-includes/js/jquery/jquery.js?ver=1.12.4-wp'></script>
-<script type='text/javascript' src='https://www.burningwave.org/wp-includes/js/jquery/jquery-migrate.min.js?ver=1.4.1'></script>
+<script type='text/javascript' src='./../js/jquery-3.6.0.js'></script>
 <script type='text/javascript' src="./../js/Chart.min.js"></script>
 <script type='text/javascript' src="./../js/moment.min.js"></script>
 <style> 
@@ -93,8 +92,7 @@
 		if (groupIds == null || groupIds.includes(colorForArtifactMap[i][0].split(":")[0])) {
 			defaultArtifactIds.push(colorForArtifactMap[i][0]);
 		}		
-	}
-	
+	}	
 	
     try {		
 		var artifactIds = toArray(getQueryParam("artifactId"));
