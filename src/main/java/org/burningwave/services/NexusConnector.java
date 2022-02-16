@@ -453,10 +453,8 @@ public class NexusConnector {
 		}
 	}
 
-	@Getter
-	@Setter
-	@NoArgsConstructor
-	@ToString
+
+
 	static class Project {
 
 		private Calendar startDate;
@@ -464,13 +462,69 @@ public class NexusConnector {
 		private String groupName;
 		private Map<String, Artifact> artifacts;
 
-		@Getter
-		@Setter
-		@NoArgsConstructor
-		@ToString
+
+		public Calendar getStartDate() {
+			return startDate;
+		}
+		public void setStartDate(Calendar startDate) {
+			this.startDate = startDate;
+		}
+
+
+		public String getGroupId() {
+			return groupId;
+		}
+		public void setGroupId(String groupId) {
+			this.groupId = groupId;
+		}
+
+
+		public String getGroupName() {
+			return groupName;
+		}
+		public void setGroupName(String groupName) {
+			this.groupName = groupName;
+		}
+
+
+		public Map<String, Artifact> getArtifacts() {
+			return artifacts;
+		}
+		public void setArtifacts(Map<String, Artifact> artifacts) {
+			this.artifacts = artifacts;
+		}
+
+
+
+		@Override
+		public String toString() {
+			return "Project [startDate=" + startDate + ", groupId=" + groupId + ", groupName=" + groupName
+					+ ", artifacts=" + artifacts + "]";
+		}
+
+
 		static class Artifact {
 			private String id;
 			private String color;
+
+			public String getId() {
+				return id;
+			}
+			public void setId(String id) {
+				this.id = id;
+			}
+			public String getColor() {
+				return color;
+			}
+			public void setColor(String color) {
+				this.color = color;
+			}
+
+			@Override
+			public String toString() {
+				return "Artifact [id=" + id + ", color=" + color + "]";
+			}
+
 		}
 	}
 
