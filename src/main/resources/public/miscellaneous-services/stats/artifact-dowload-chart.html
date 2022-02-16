@@ -319,7 +319,7 @@
     function launchAsyncCall(artifactId, startDate, months) {
         var startDateParam = startDate != null ? '&startDate=' + startDate : '';
         var monthsParam = months != null ? '&months=' + months : '';
-        var url = 'https://burningwave.herokuapp.com/miscellaneous-services/stats/downloads-for-month?' +
+        var url = './downloads-for-month?' +
 			'groupId=' + artifactId.split(':')[0] + '&' +
 			'artifactId=' + artifactId.split(':')[1] + '&' +
 			startDateParam + monthsParam;
