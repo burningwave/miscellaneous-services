@@ -1,7 +1,7 @@
 <script type='text/javascript' src='https://www.burningwave.org/wp-includes/js/jquery/jquery.js?ver=1.12.4-wp'></script>
 <script type='text/javascript' src='https://www.burningwave.org/wp-includes/js/jquery/jquery-migrate.min.js?ver=1.4.1'></script>
-<script type='text/javascript' src="https://www.burningwave.org/charts/Chart.min.js"></script>
-<script type='text/javascript' src="https://www.burningwave.org/charts/moment.min.js"></script>
+<script type='text/javascript' src="./../js/Chart.min.js"></script>
+<script type='text/javascript' src="./../js/moment.min.js"></script>
 <style> 
     #loader { 
         border: 12px solid #f7bc12; 
@@ -75,29 +75,31 @@
 	</div>
 </div>
 <script>
-	var defaultArtifactIds = [
-		'com.github.burningwave:core',
-		'com.github.burningwave:graph',
-		'io.github.toolfactory:jvm-driver',
-		'io.github.toolfactory:narcissus',
-		'org.burningwave:jvm-driver',
-		'org.burningwave:core',
-		'org.burningwave:graph',
-		'org.burningwave:tools'
-	];
 	var defaultDateAsString = '2018-12-01';
-	var colorForArtifactMap = [];
-	var artifactIds;
+	var colorForArtifactMap = [
+		['com.github.burningwave:core', 'rgb(229, 77, 29)'],
+		['com.github.burningwave:graph', 'rgb(247, 188, 18)'],
+		['io.github.toolfactory:jvm-driver', 'rgb(0, 255, 0)'],
+		['io.github.toolfactory:narcissus', 'rgb(64, 42, 148)'],
+		['org.burningwave:jvm-driver', 'rgb(0, 255, 0)'],
+		['org.burningwave:core', 'rgb(229, 77, 29)'],
+		['org.burningwave:graph', 'rgb(247, 188, 18)'],
+		['org.burningwave:tools', 'rgb(6, 109, 161)']
+	];
+	var totalRowTextColor = 'rgb(0, 0, 0)';
+	var defaultArtifactIds = [];
+	var groupIds = toArray(getQueryParam("groupId"));
+	for (i = 0; i < colorForArtifactMap.length; i++) {
+		if (groupIds == null || groupIds.includes(colorForArtifactMap[i][0].split(":")[0])) {
+			defaultArtifactIds.push(colorForArtifactMap[i][0]);
+		}		
+	}
+	
 	
     try {		
-		var artifactIdsQueryParam = getQueryParam("artifactId");
-		
-		if (artifactIdsQueryParam == null) {
+		var artifactIds = toArray(getQueryParam("artifactId"));
+		if (artifactIds == null) {
 			artifactIds = defaultArtifactIds;
-		} else if (!Array.isArray(artifactIdsQueryParam)) {
-			artifactIds = [artifactIdsQueryParam];
-		} else {
-			artifactIds = artifactIdsQueryParam;
 		}
 		
 		buildSummary(artifactIds);
@@ -140,11 +142,20 @@
         var attemptedLoadingArtifactIds = [];
         for (i = 0; i < artifactIds.length; i++) {
             launchAsyncCallForOne(artifactIds[i], 3);
-        }
-		
+        }		
     } catch (error) {
-        //location.reload();
+        location.reload();
     }
+	
+	function toArray(variable) {
+		if (variable == null) {
+			return null;
+		} else if (Array.isArray(variable)) {
+			return variable;
+		} else {
+			return [variable];
+		}
+	}
 	
 	function getQueryParam(key, target){
 		var values = [];
@@ -176,7 +187,7 @@
 			jQuery("#downloadsSummary").append(summaryItem);
 		}
 		jQuery("#downloadsSummary").append(buildSummaryItem(null, 'rgb(0, 0, 0)'));
-		jQuery("#downloadsSummary").append(buildSummaryItem('Total', 'rgb(128, 128, 128)'));
+		jQuery("#downloadsSummary").append(buildSummaryItem('Total', totalRowTextColor));
 	}
 	
 	function buildSummaryItem(artifactId, color) {
@@ -236,19 +247,35 @@
                 }
                 totalDownloads.push(totalForMonth);
             }
+			for (j = 0; j < totalDownloads.length; j++) {
+				if (totalDownloads[j] != 0) {
+					break;
+				}
+				totalDownloads[j] = null;
+			}
 
             var overallDownloads = buildChartDataSets(monthlyTrendChartDatasets, overallTrendChartDatasets, 'Total', totalDownloads,
-                getBackgroundColor("Total"), getBorderColor("Total")
+                totalRowTextColor, totalRowTextColor
             );
 
-            document.getElementById("TotalDownloads").appendChild(document.createTextNode(overallDownloads[overallDownloads.length - 1]));
+            document.getElementById("TotalDownloads").appendChild(document.createTextNode(formatNumber(overallDownloads[overallDownloads.length - 1])));
         }
         if (attemptedLoadingArtifactIds.length == artifactIds.length) {
             overlayOff(); 
         }
         updateCharts();
     }
-
+	
+	function formatNumber(number, minimumFractionDigits) {
+		if (minimumFractionDigits == null) {
+			minimumFractionDigits = 0;
+		}
+		return (number).toLocaleString(
+		  undefined,
+		  { minimumFractionDigits: 0 }
+		);
+	}
+	
     function getLabel(name) {
         return name;
     }
@@ -273,15 +300,21 @@
     }
 	
 	function getRandomColor(artifactId) {
-		var color;
+		var artifactForColor;
 		for (i = 0; i < colorForArtifactMap.length; i++) {
 			if (colorForArtifactMap[i][0] == artifactId) {
-				return colorForArtifactMap[i][1];
+				artifactForColor = colorForArtifactMap[i];
+				break;				
 			}
         }
-		color = 'rgb(' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ')';
-		colorForArtifactMap.push([artifactId, color]);
-		return color;
+		if (artifactForColor == null) {
+			artifactForColor = [artifactId, null];
+			colorForArtifactMap.push(artifactForColor);
+		}
+		if (artifactForColor[1] == null) {
+			artifactForColor[1] = 'rgb(' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ')';
+		}
+		return artifactForColor[1];
 	}
 
 
@@ -326,7 +359,7 @@
                     downloadsData, backgroundColor, borderColor
                 );
                 document.getElementById(artifactId + "Downloads").appendChild(
-                    document.createTextNode(overallDownloads[overallDownloads.length - 1])
+                    document.createTextNode(formatNumber(overallDownloads[overallDownloads.length - 1]))
                 );
             } else {
                 document.getElementById(artifactId + "DownloadsRow").style.display = "none";             
