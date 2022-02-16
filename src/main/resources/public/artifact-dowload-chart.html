@@ -1,0 +1,430 @@
+<script type='text/javascript' src='https://www.burningwave.org/wp-includes/js/jquery/jquery.js?ver=1.12.4-wp'></script>
+<script type='text/javascript' src='https://www.burningwave.org/wp-includes/js/jquery/jquery-migrate.min.js?ver=1.4.1'></script>
+<script type='text/javascript' src="https://www.burningwave.org/charts/Chart.min.js"></script>
+<script type='text/javascript' src="https://www.burningwave.org/charts/moment.min.js"></script>
+<style> 
+    #loader { 
+        border: 12px solid #f7bc12; 
+        border-radius: 50%; 
+        border-top: 12px solid #e54d1d; 
+        width: 35px; 
+        height: 35px; 
+        animation: spin 1s linear infinite; 
+    } 
+        
+    @keyframes spin { 
+        100% { 
+            transform: rotate(360deg); 
+        } 
+    } 
+        
+    .center { 
+        position: absolute; 
+        top: 0; 
+        bottom: 0; 
+        left: 0; 
+        right: 0;
+        margin: auto; 
+    }
+    #overlay {
+        display:table;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0,0,0,0.8);
+        z-index: 2;
+        cursor: pointer;
+    }
+
+    #overlay span{
+        color: #f7bc12;
+        font-size: 18px;
+        display:table-cell;
+        vertical-align:middle;
+        text-align:center;
+    }
+</style>
+<div style="font-family: 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif';">
+	<div id="overlay">
+		<div id="loader" class="center"></div>
+		<span><br/><br/><br/><br/><br/><b>LOADING DATA</b></span>
+	</div> 
+
+	<div id="chartContainer">
+		<div style="max-width: 100%; margin: auto;">
+			<h1 style="color: #e54d1d; font-weight: 500;">Artifact downloads from Maven Central</h1>
+			<div>
+				<p style="color: grey;"><strong>Download counts are automatically updated after the sixth day of each month by connecting directly to Maven Central Statistics</strong>.</p>
+			</div>
+			<div style="display: table;" id="downloadsSummary">
+
+			</div>
+		</div>
+		<div id="overallTrendChartDiv" style="max-width: 100%; margin: auto;">
+			<canvas id="overallTrendChart"></canvas>
+		</div>
+		<div id="separatorDivOne" style="height: 50px;">
+		</div>
+		<div id="monthlyTrendChartDiv" style="max-width: 100%; margin: auto;">
+			<canvas id="monthlyTrendChart"></canvas>
+		</div>
+	</div>
+</div>
+<script>
+	var defaultArtifactIds = [
+		'com.github.burningwave:core',
+		'com.github.burningwave:graph',
+		'org.burningwave:jvm-driver',
+		'org.burningwave:core',
+		'org.burningwave:graph',
+		'org.burningwave:tools'
+	];
+	var defaultDateAsString = '2018-12-01';
+	var colorForArtifactMap = [];
+	var artifactIds;
+	
+    try {		
+		var artifactIdsQueryParam = getQueryParam("artifactId");
+		
+		if (artifactIdsQueryParam == null) {
+			artifactIds = defaultArtifactIds;
+		} else if (!Array.isArray(artifactIdsQueryParam)) {
+			artifactIds = [artifactIdsQueryParam];
+		} else {
+			artifactIds = artifactIdsQueryParam;
+		}
+		
+		buildSummary(artifactIds);
+		var startDateQueryParam = getQueryParam("startDate");
+		var monthsQueryParam = getQueryParam("months");
+		
+        var startDate = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
+		var startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
+        var endDate = (monthsQueryParam != null ? startDateForComputation.add(monthsQueryParam,'month') : moment()).startOf('month').add(-1,'day');
+        var timeValues = [];
+		startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
+		var months;
+        while (endDate > startDateForComputation || startDateForComputation.format('M') === endDate.format('M')) {
+            timeValues.push(startDateForComputation.format('MMM YYYY'));
+            startDateForComputation.add(1,'month');
+			months = months != null ? months + 1 : 1;
+        }
+	
+        var monthlyTrendChartDatasets = [];
+        var overallTrendChartDatasets = [];
+        var overallTrendChart = null;
+        var monthlyTrendChart = null;
+        var showOverallTrendChart = getQueryParam("show-overall-trend-chart");
+        if (showOverallTrendChart == null || showOverallTrendChart.toUpperCase() != "false".toUpperCase()) {
+            overallTrendChart = createChart('overallTrendChart', 'Overall trend', timeValues, overallTrendChartDatasets);
+        } else {
+            document.getElementById("overallTrendChartDiv").style.display = "none";
+        }
+        var showMonthlyTrendChart = getQueryParam("show-monthly-trend-chart");
+        if (showMonthlyTrendChart == null || showMonthlyTrendChart.toUpperCase() != "false".toUpperCase()) {
+            monthlyTrendChart = createChart('monthlyTrendChart', 'Monthly trend', timeValues, monthlyTrendChartDatasets);
+        } else {
+            document.getElementById("monthlyTrendChartDiv").style.display = "none";
+        }
+        if (overallTrendChart == null || monthlyTrendChart == null) {
+            document.getElementById("separatorDivOne").style.display = "none";
+        }
+
+        var loadedArtifactIds = [];
+        var attemptedLoadingArtifactIds = [];
+        for (i = 0; i < artifactIds.length; i++) {
+            launchAsyncCallForOne(artifactIds[i], 3);
+        }
+		
+    } catch (error) {
+        //location.reload();
+    }
+	
+	function getQueryParam(key, target){
+		var values = [];
+		if (!target) target = location.href;
+
+		key = key.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+
+		var pattern = key + '=([^&#]+)';
+		var o_reg = new RegExp(pattern,'ig');
+		while (true){
+			var matches = o_reg.exec(target);
+			if (matches && matches[1]){
+				values.push(matches[1]);
+			} else {
+				break;
+			}
+		}
+
+		if (!values.length){
+			return null;   
+		} else {
+			return values.length == 1 ? values[0] : values;
+		}
+	}
+	
+	function buildSummary(artifactIds) {
+		for (j = 0; j < artifactIds.length; j++) {
+			var summaryItem = buildSummaryItem(artifactIds[j]);
+			jQuery("#downloadsSummary").append(summaryItem);
+		}
+		jQuery("#downloadsSummary").append(buildSummaryItem(null, 'rgb(0, 0, 0)'));
+		jQuery("#downloadsSummary").append(buildSummaryItem('Total', 'rgb(128, 128, 128)'));
+	}
+	
+	function buildSummaryItem(artifactId, color) {
+		var item = 
+			'<div id="' + artifactId + 'DownloadsRow" style="display: table-row;">' + 
+			'	<div style="display: table-cell;color: ' + (color != null ? color : getRandomColor(artifactId)) + ';">' + 
+			'   	<b>' + (artifactId != null ? artifactId : '') + '</b>' + (artifactId != null ? ':' : '') + '&nbsp;' +
+			'	</div>' +
+			'	<div id="' + artifactId + 'Downloads" style="display: table-cell; text-align: right; color: grey;">' +
+			'	</div>' +
+			'</div>';
+		return item;
+	}
+	
+	function overlayOff() {
+		document.getElementById("overlay").style.display = "none";
+		document.documentElement.style.overflow = 'scroll';
+		document.body.scroll = "yes";
+	}
+
+	function launchAsyncCallForOne(artifactId, attempt) {
+		if (attempt > 0) {
+			jQuery.when(
+				launchAsyncCall(
+					artifactId, 
+					startDateQueryParam, 
+					months
+				)
+			).done(function ( artifactDownloads ) {
+				if (artifactDownloads != null) {
+					loadedArtifactIds.push(artifactId);
+					attemptedLoadingArtifactIds.push(artifactId);
+					buildChartData(monthlyTrendChartDatasets, overallTrendChartDatasets,
+						artifactId,
+						getLabel(artifactId), artifactDownloads, 
+						getBackgroundColor(artifactId),
+						getBorderColor(artifactId)
+					);
+					buildTotalTrendAndShowChart();
+				} else {
+					launchAsyncCallForOne(artifactId, --attempt);
+				}            
+			});
+		} else {
+			attemptedLoadingArtifactIds.push(artifactId);
+			displayError(artifactId);
+		}
+	}
+
+    function buildTotalTrendAndShowChart() {
+        if (loadedArtifactIds.length == artifactIds.length && monthlyTrendChartDatasets[0] != null) {
+            var totalDownloads = [];
+            for (j = 0; j < monthlyTrendChartDatasets[0].data.length; j++) {
+                var totalForMonth = 0;
+                for (i = 0; i < monthlyTrendChartDatasets.length; i++) {
+                    totalForMonth += monthlyTrendChartDatasets[i].data[j];
+                }
+                totalDownloads.push(totalForMonth);
+            }
+
+            var overallDownloads = buildChartDataSets(monthlyTrendChartDatasets, overallTrendChartDatasets, 'Total', totalDownloads,
+                getBackgroundColor("Total"), getBorderColor("Total")
+            );
+
+            document.getElementById("TotalDownloads").appendChild(document.createTextNode(overallDownloads[overallDownloads.length - 1]));
+        }
+        if (attemptedLoadingArtifactIds.length == artifactIds.length) {
+            overlayOff(); 
+        }
+        updateCharts();
+    }
+
+    function getLabel(name) {
+        return name;
+    }
+
+    function updateCharts() {
+        if (overallTrendChart != null) {
+            overallTrendChart.update();
+        }
+        if (monthlyTrendChart != null) {
+            monthlyTrendChart.update();
+        }
+    }
+
+
+    function getBackgroundColor(artifactId) {
+		return getRandomColor(artifactId);
+    }
+
+
+    function getBorderColor(artifactId){
+		return getRandomColor(artifactId);
+    }
+	
+	function getRandomColor(artifactId) {
+		var color;
+		for (i = 0; i < colorForArtifactMap.length; i++) {
+			if (colorForArtifactMap[i][0] == artifactId) {
+				return colorForArtifactMap[i][1];
+			}
+        }
+		color = 'rgb(' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ')';
+		colorForArtifactMap.push([artifactId, color]);
+		return color;
+	}
+
+
+    function launchAsyncCall(artifactId, startDate, months) {
+        var startDateParam = startDate != null ? '&startDate=' + startDate : '';
+        var monthsParam = months != null ? '&months=' + months : '';
+        var url = 'https://burningwave.herokuapp.com/miscellaneous-services/stats/downloads-for-month?' +
+			'groupId=' + artifactId.split(':')[0] + '&' +
+			'artifactId=' + artifactId.split(':')[1] + '&' +
+			startDateParam + monthsParam;
+        return jQuery.ajax({
+            url: url,
+            data: {
+                format: 'json'
+            },
+            /*error: function (jqXhr, textStatus, errorMessage) { // error callback 
+                alert('Error: ' + errorMessage);
+            },*/
+            dataType: 'json',
+            /*success: function(data) {
+                alert(data);
+            },*/
+            type: 'GET'
+        });
+    }
+
+
+    function buildChartData(monthlyTrendChartDatasets, overallTrendChartDatasets, artifactId, label, downloadsData, backgroundColor,  borderColor) {
+        if (downloadsData != null && downloadsData.length > 0) {
+            if (downloadsData[downloadsData.length - 1] != null) {
+                var idx = downloadsData.length - 1;
+                var popCount = 0;
+                while (downloadsData[idx] == 0) {
+                    popCount++;
+                    idx--;
+                }
+                for (let i = 0; i < popCount; i++) {
+                    downloadsData.pop();
+                } 
+                var overallDownloads = buildChartDataSets(
+                    monthlyTrendChartDatasets, overallTrendChartDatasets, label,
+                    downloadsData, backgroundColor, borderColor
+                );
+                document.getElementById(artifactId + "Downloads").appendChild(
+                    document.createTextNode(overallDownloads[overallDownloads.length - 1])
+                );
+            } else {
+                document.getElementById(artifactId + "DownloadsRow").style.display = "none";             
+            }
+        }
+    }
+
+
+    function buildChartDataSets(monthlyTrendChartDatasets, overallTrendChartDatasets, label, downloadsData, backgroundColor,  borderColor) {
+        monthlyTrendChartDatasets.push(createDataSet(label, downloadsData, backgroundColor, borderColor));
+        var overallDownloads = [downloadsData[0]];
+        for (i = 1; i < downloadsData.length; i++) {
+            if (overallDownloads[i - 1] != null) {
+                overallDownloads[i] = overallDownloads[i - 1] + downloadsData[i];
+            } else {
+                overallDownloads[i] = downloadsData[i];
+            }
+        }
+        overallTrendChartDatasets.push(createDataSet(label, overallDownloads, backgroundColor, borderColor));
+        return overallDownloads;
+    }
+
+
+    function createChart(id, name, labels, dataSets) {
+        var ctx = document.getElementById(id);
+        ctx.height = 400;
+        return new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: dataSets
+            },
+            options: createOptions(name)
+        });
+    }
+
+
+    function createDataSet(label, data, backgroundColor, borderColor) {
+        return {
+            label: label,
+            fill: false,
+            data: data,
+            borderWidth: 3,
+            pointRadius: 2,
+            pointHoverRadius: 4,
+            lineTension: 0.4,
+            backgroundColor: backgroundColor,
+            borderColor: borderColor		
+        };
+    }
+
+
+    function createOptions(title) {
+        return {
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true
+                    },
+                    gridLines: {
+                        drawOnChartArea: true
+                    }
+                }],
+                xAxes: [{
+                    gridLines: {
+                        drawOnChartArea: false
+                    }
+                }]
+            },
+            title: {
+                display: true,
+                fontSize: 28,
+                text: title
+            },
+            tooltips: {
+                mode: 'index',
+                intersect: false,
+            },
+            animation: {
+                duration: 0
+            },
+            maintainAspectRatio: false
+        };
+    }
+
+    function displayError(id) {
+        var errorMessage = "Could not retrieve download count from Maven Central: try again later or tomorrow";
+        var node = document.getElementById(id + "Downloads");
+        while (node.firstChild) {
+            node.removeChild(node.firstChild);
+        }
+        node.appendChild(document.createTextNode(errorMessage));
+        node = document.getElementById("totalDownloads");
+        while (node.firstChild) {
+            node.removeChild(node.firstChild);
+        }
+        node.appendChild(document.createTextNode(errorMessage));
+        if (attemptedLoadingArtifactIds.length == artifactIds.length) {
+            overlayOff(); 
+        }
+    }
+
+</script>
