@@ -11,6 +11,7 @@ import java.util.Base64;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.Random;
 
 public class Utility {
 
@@ -77,6 +78,12 @@ public class Utility {
 
 	public String toPlaceHolder(String variable) {
 		return "${" + variable + "}";
+	}
+
+	public String randomHex() {
+		Random obj = new Random();
+		int rand_num = obj.nextInt(0xffffff + 1);
+		return String.format("%06x", rand_num);
 	}
 
 }

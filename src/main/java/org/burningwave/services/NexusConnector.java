@@ -36,6 +36,7 @@ import javax.xml.bind.annotation.XmlTransient;
 import org.burningwave.SimpleCache;
 import org.burningwave.Throwables;
 import org.burningwave.Utility;
+import org.burningwave.services.NexusConnector.Project.Artifact;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -69,7 +70,8 @@ public class NexusConnector {
     	logger = org.slf4j.LoggerFactory.getLogger(NexusConnector.class);
     }
 
-    public NexusConnector(Map<String, Object> configMap) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
+    public NexusConnector(Utility utility, Map<String, Object> configMap) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
+    	this.utility = utility;
     	restTemplate = new RestTemplate();
     	HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", configMap.get("authorization.token.type") + " " + configMap.get("authorization.token"));
@@ -87,6 +89,16 @@ public class NexusConnector {
 			inMemoryCache.clear();
 			logger.info("In memory cache cleaning done");
 		}
+	}
+
+	public Collection<String[]> getAllProjectInfos() {
+		Collection<String[]> projectInfos = new ArrayList<>();
+		for (Project project : allGroupsInfo) {
+			for (Map.Entry<String, Artifact> artifactEntry : project.getArtifacts().entrySet()) {
+				projectInfos.add(new String[]{project.getGroupName() + ":" + artifactEntry.getKey(), artifactEntry.getValue().getColor()});
+			}
+		}
+		return projectInfos;
 	}
 
     public GetStatsOutput getStats(GetStatsInput input) {
@@ -153,7 +165,7 @@ public class NexusConnector {
 
 	private Project getGroup(GetStatsInput input) {
 		for (Project groupInfo : allGroupsInfo) {
-			if (groupInfo.getGroupName().equals(input.getGroupId()) && groupInfo.getArtifactIds().containsValue(input.getArtifactId())) {
+			if (groupInfo.getGroupName().equals(input.getGroupId()) && groupInfo.getArtifacts().values().stream().filter(artifact -> artifact.getId().equals(input.getArtifactId())).findFirst().isPresent()) {
 				return groupInfo;
 			}
 		}
@@ -173,17 +185,25 @@ public class NexusConnector {
         	String[] projectInfoAsSplittedString = projectsInfoAsSplittedString[i].split("/");
         	project.setGroupId(projectInfoAsSplittedString[0]);
         	project.setGroupName(projectInfoAsSplittedString[1]);
-        	Map<String,String> articactIds = new HashMap<>();
-        	project.setArtifactIds(articactIds);
+        	Map<String, Project.Artifact> articactIds = new HashMap<>();
+        	project.setArtifacts(articactIds);
         	for (int j = 2; j < projectInfoAsSplittedString.length; j++) {
-        		String[] projectNames = projectInfoAsSplittedString[j].split(":");
+        		String[] projectAndColorAsSplittedString = projectInfoAsSplittedString[j].split("\\\\");
+        		Project.Artifact artifact = new Project.Artifact();
+        		if (projectAndColorAsSplittedString.length > 1) {
+        			artifact.setColor(projectAndColorAsSplittedString[1]);
+        		} else {
+        			artifact.setColor(utility.randomHex());
+        		}
+        		String[] projectNames = projectAndColorAsSplittedString[0].split(":");
         		if (projectNames.length == 1) {
-        			articactIds.put(projectNames[0], projectNames[0]);
+        			artifact.setId(projectNames[0]);
         		} else if (projectNames.length == 2) {
-        			articactIds.put(projectNames[0], projectNames[1]);
+        			artifact.setId(projectNames[1]);
         		} else {
         			throw new IllegalArgumentException();
         		}
+        		articactIds.put(projectNames[0], artifact);
         	}
         	projectsInfo.add(project);
         }
@@ -328,8 +348,7 @@ public class NexusConnector {
 			nexusConnectors = ConcurrentHashMap.newKeySet();
 			for (Map<String, Object> nexusConfiguration : allNexusConfigurations.values()) {
 				nexusConfiguration.put("projects-info.start-date", startDate);
-				NexusConnector nexusConnector = new NexusConnector(nexusConfiguration);
-				nexusConnector.utility = utility;
+				NexusConnector nexusConnector = new NexusConnector(utility, nexusConfiguration);
 				nexusConnector.cache = cache;
 				nexusConnectors.add(nexusConnector);
 			}
@@ -344,14 +363,14 @@ public class NexusConnector {
 						continue;
 					}
 					if (artifactId == null) {
-						for (Map.Entry<String, String> artifactEntry : projectInfo.getArtifactIds().entrySet()) {
+						for (Map.Entry<String, Project.Artifact> artifactEntry : projectInfo.getArtifacts().entrySet()) {
 							outputSuppliers.add(CompletableFuture.supplyAsync(() ->
 								nexusConnector.getStats(
 									toInput(nexusConnector, projectInfo, artifactEntry.getKey(), startDate, months)
 								)
 							));
 						}
-					} else if (projectInfo.getArtifactIds().containsKey(artifactId)) {
+					} else if (projectInfo.getArtifacts().containsKey(artifactId)) {
 						outputSuppliers.add(CompletableFuture.supplyAsync(() ->
 							nexusConnector.getStats(
 								toInput(nexusConnector, projectInfo, artifactId, startDate, months)
@@ -376,7 +395,7 @@ public class NexusConnector {
 			return new GetStatsInput(
 				projectInfo.getGroupId(),
 				projectInfo.getGroupName(),
-				artifactId != null? projectInfo.getArtifactIds().get(artifactId) : null,
+				artifactId != null? projectInfo.getArtifacts().get(artifactId).getId() : null,
 				startDate,
 				months != null ? months : nexusConnector.computeDefaultMonths(startDate)
 			);
@@ -424,6 +443,14 @@ public class NexusConnector {
 				nexusConnector.clearCache();
 			}
 		}
+
+		public Object getAllProjectInfos() {
+			Collection<String[]> projectInfos = new ArrayList<>();
+			for (NexusConnector nexusConnector : nexusConnectors) {
+				projectInfos.addAll(nexusConnector.getAllProjectInfos());
+			}
+			return projectInfos;
+		}
 	}
 
 	@Getter
@@ -435,8 +462,16 @@ public class NexusConnector {
 		private Calendar startDate;
 		private String groupId;
 		private String groupName;
-		private Map<String, String> artifactIds;
+		private Map<String, Artifact> artifacts;
 
+		@Getter
+		@Setter
+		@NoArgsConstructor
+		@ToString
+		static class Artifact {
+			private String id;
+			private String color;
+		}
 	}
 
 }

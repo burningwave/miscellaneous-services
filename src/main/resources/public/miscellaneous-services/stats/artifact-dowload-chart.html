@@ -75,16 +75,7 @@
 </div>
 <script>
 	var defaultDateAsString = '2018-12-01';
-	var colorForArtifactMap = [
-		['com.github.burningwave:core', 'rgb(229, 77, 29)'],
-		['com.github.burningwave:graph', 'rgb(247, 188, 18)'],
-		['io.github.toolfactory:jvm-driver', 'rgb(0, 255, 0)'],
-		['io.github.toolfactory:narcissus', 'rgb(64, 42, 148)'],
-		['org.burningwave:jvm-driver', 'rgb(0, 255, 0)'],
-		['org.burningwave:core', 'rgb(229, 77, 29)'],
-		['org.burningwave:graph', 'rgb(247, 188, 18)'],
-		['org.burningwave:tools', 'rgb(6, 109, 161)']
-	];
+	var colorForArtifactMap = getColorForArtifactMap();
 	var totalRowTextColor = 'rgb(0, 0, 0)';
 	var defaultArtifactIds = [];
 	var groupIds = toArray(getQueryParam("groupId"));
@@ -144,6 +135,26 @@
     } catch (error) {
         location.reload();
     }
+	
+	function getColorForArtifactMap() {
+		var allProjectInfos = getAllProjectInfos().responseJSON;
+		for (i = 0; i < allProjectInfos.length; i++) {
+            allProjectInfos[i][1] = hexToRgb(allProjectInfos[i][1]);
+        }
+		return allProjectInfos;
+	}
+	
+	function hexToRgb(hex) {
+		hex = '#' + hex;
+		// Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+		var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+		hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+			return r + r + g + g + b + b;
+		});	
+		var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+		var rgbString = 'rgb(' + parseInt(result[1], 16) + ', ' + parseInt(result[2], 16) + ', ' + parseInt(result[3], 16) + ')';
+		return rgbString;
+	}
 	
 	function toArray(variable) {
 		if (variable == null) {
@@ -338,6 +349,25 @@
             type: 'GET'
         });
     }
+
+	function getAllProjectInfos() {
+        var url = './../nexus-connector/project-info';
+        return jQuery.ajax({
+            url: url,
+            data: {
+                format: 'json'
+            },
+            /*error: function (jqXhr, textStatus, errorMessage) { // error callback 
+                alert('Error: ' + errorMessage);
+            },*/
+            dataType: 'json',
+            /*success: function(data) {
+                alert(data);
+            },*/
+            type: 'GET',
+			async: false
+        });
+	}
 
 
     function buildChartData(monthlyTrendChartDatasets, overallTrendChartDatasets, artifactId, label, downloadsData, backgroundColor,  borderColor) {

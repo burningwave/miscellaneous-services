@@ -48,6 +48,10 @@ public class Controller {
 		this.gitHubConnector = gitHubConnector;
 	}
 
+	@GetMapping(path = "/nexus-connector/project-info", produces = "application/json")
+	public Object getProjectInfo() {
+		return nexusConnectorGroup.getAllProjectInfos();
+	}
 
 	@GetMapping(path = "/stats/total-downloads", produces = "application/json")
 	public Object getTotalDownloads(
