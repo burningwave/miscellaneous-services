@@ -550,8 +550,7 @@
 	
 	function goToUrl(url) {
 		overlayOn();
-		window.onload = overlayOff;
-		window.location = (url);
+		window.location.href = url;
 		return false;
 	}
 	
