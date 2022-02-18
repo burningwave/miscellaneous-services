@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -456,12 +457,15 @@ public class NexusConnector {
 			}
 		}
 
-		public Object getAllProjectInfos() {
-			Collection<String[]> projectInfos = new ArrayList<>();
+		public Collection<String[]> getAllProjectInfos() {
+			Map<String, String[]> projectInfos = new TreeMap<>();
 			for (NexusConnector nexusConnector : nexusConnectors) {
-				projectInfos.addAll(nexusConnector.getAllProjectInfos());
+				for (String[] projectInfo : nexusConnector.getAllProjectInfos()) {
+					projectInfos.put(projectInfo[0], projectInfo);
+				}
+
 			}
-			return projectInfos;
+			return projectInfos.values();
 		}
 	}
 
