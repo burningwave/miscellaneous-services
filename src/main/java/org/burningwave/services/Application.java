@@ -3,11 +3,11 @@ package org.burningwave.services;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.InetAddress;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import javax.xml.bind.JAXBException;
 
@@ -15,6 +15,7 @@ import org.burningwave.Badge;
 import org.burningwave.SimpleCache;
 import org.burningwave.Utility;
 import org.burningwave.core.assembler.StaticComponentContainer;
+import org.burningwave.core.function.ThrowingSupplier;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -156,7 +157,7 @@ public class Application {
 		zone = "${scheduled-operations.ping.zone}"
 	)
 	@Async
-	public void ping() {
+	public void ping() throws Throwable {
 		applicationContext.getBean(SelfConnector.class).ping();
 	}
 
@@ -164,21 +165,22 @@ public class Application {
 
 		final RestTemplate restTemplate;
 	    final HttpEntity<String> entity;
-	    final Supplier<UriComponentsBuilder> getStatsTotalDownloadsUriComponentsBuilder;
+	    final ThrowingSupplier<UriComponentsBuilder, Throwable> getStatsTotalDownloadsUriComponentsBuilder;
 
-	    public SelfConnector(Map<String, Object> configMap)  {
+	    public SelfConnector(Map<String, Object> configMap) {
 	    	restTemplate = new RestTemplate();
 	        entity = new HttpEntity<String>(new HttpHeaders());
+
 	        getStatsTotalDownloadsUriComponentsBuilder = () ->
 	        	UriComponentsBuilder.newInstance()
 	        	.scheme("https")
-	        	.host((String)configMap.get("host"))
+	        	.host(InetAddress.getLocalHost().getCanonicalHostName())
 	        	.path("/miscellaneous-services/stats/total-downloads")
 	        	.queryParam("groupId", "org.burningwave")
 	        	.queryParam("artifactId", "core");
 	    }
 
-	    public void ping() {
+	    public void ping() throws Throwable {
 			String url = getStatsTotalDownloadsUriComponentsBuilder.get().build().toString();
 			restTemplate.exchange(
 				url,

@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBException;
 
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/miscellaneous-services/")
@@ -134,16 +136,24 @@ public class Controller {
 	@GetMapping(path = "/clear-cache")
 	public void clearCache(
 		@RequestHeader(value = "Authorization", required = false) String authorizationToken,
+		HttpServletRequest request,
 		HttpServletResponse response
 	) throws IOException {
+		String message;
 		if ((environment.getProperty("application.authorization.token.type") + " " + environment.getProperty("application.authorization.token")).equals(authorizationToken)) {
 			nexusConnectorGroup.clearCache();
 			gitHubConnector.clearCache();
 			cache.clear();
+			message = "Cache successfully cleaned";
 		} else {
-			logger.error("Cannot clear cache: unauthorized");
+			logger.error(message = "Cannot clear cache: unauthorized");
 		}
-		response.sendRedirect("https://burningwave.herokuapp.com/miscellaneous-services/stats/artifact-download-chart.html");
+		response.setHeader("message", message);
+		response.sendRedirect(ServletUriComponentsBuilder.fromCurrentContextPath().pathSegment(
+			"miscellaneous-services",
+			"stats",
+			"artifact-download-chart.html"
+		).build().toUriString());
 	}
 
 	private Long getTotalDownloadsOrNull(Set<String> groupIds, Set<String> aliases, Set<String> artifactIds, String startDate, String months) {
