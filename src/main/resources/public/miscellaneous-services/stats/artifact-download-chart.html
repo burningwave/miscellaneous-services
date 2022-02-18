@@ -59,11 +59,21 @@
         vertical-align:middle;
         text-align:center;
     }
+	a:link {
+		color: #e54d1d;
+		text-decoration: none;
+	}
+	a:visited {
+		color: #e54d1d;
+	}
+	a:link:hover {
+		text-decoration: underline;
+	}
 </style>
 <div style="margin: 30px; font-family: 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif';">
 	<div id="overlay">
 		<div id="loader" class="center"></div>
-		<span><br/><br/><br/><br/><br/><b>LOADING DATA</b></span>
+		<span><br/><br/><br/><br/><br/><b>LOADING</b></span>
 	</div> 
 
 	<div id="chartContainer">
@@ -86,7 +96,10 @@
 		</div>
 	</div>
 	<div style="margin-top: 30px; text-align: right;">
-		Powered by <span style="font-family: 'Aldo Pro Book'; font-size: 21px; color: #e54d1d; font-style: italic; font-weight: bold;"><a href="https://www.burningwave.org/">Burningwave<a></span>
+		Powered by
+		<a href="#" onclick="goToUrl('https://www.burningwave.org/');return false;">
+			<span style="font-family: 'Aldo Pro Book'; font-size: 23px; font-style: italic; font-weight: bold;">Burningwave</span>
+		</a>
 	</div>
 </div>
 <script>
@@ -143,6 +156,7 @@
     } catch (error) {
         //location.reload();
     }
+
 	
 	function selectProjectInfos(groupIdValues, artifactIdValues, aliasValues) {
 		var artifactIds = [];
@@ -160,6 +174,7 @@
 		
 	}
 	
+	
 	function getallProjectInfos() {
 		var allallProjectInfos = getAllallProjectInfos().responseJSON;
 		for (i = 0; i < allallProjectInfos.length; i++) {
@@ -167,6 +182,7 @@
         }
 		return allallProjectInfos;
 	}
+	
 	
 	function hexToRgb(hex) {
 		hex = '#' + hex;
@@ -180,6 +196,7 @@
 		return rgbString;
 	}
 	
+	
 	function toArray(variable) {
 		if (variable == null) {
 			return null;
@@ -189,6 +206,7 @@
 			return [variable];
 		}
 	}
+	
 	
 	function getQueryParam(key, target){
 		var values = [];
@@ -214,6 +232,7 @@
 		}
 	}
 	
+	
 	function buildSummary(artifactIds) {
 		for (j = 0; j < artifactIds.length; j++) {
 			var summaryItem = buildSummaryItem(artifactIds[j]);
@@ -222,6 +241,7 @@
 		jQuery("#downloadsSummary").append(buildSummaryItem(null, 'rgb(0, 0, 0)'));
 		jQuery("#downloadsSummary").append(buildSummaryItem('Total', totalRowTextColor));
 	}
+	
 	
 	function buildSummaryItem(artifactId, color) {
 		var item = 
@@ -235,11 +255,20 @@
 		return item;
 	}
 	
+	
 	function overlayOff() {
 		document.getElementById("overlay").style.display = "none";
 		document.documentElement.style.overflow = 'scroll';
 		document.body.scroll = "yes";
 	}
+	
+	
+	function overlayOn() {
+		document.getElementById("overlay").style.display = "";
+		document.documentElement.style.overflow = 'hidden';
+		document.body.scroll = "no";
+	}
+	
 
 	function launchAsyncCallForOne(artifactId, attempt) {
 		if (attempt > 0) {
@@ -269,6 +298,7 @@
 			displayError(artifactId);
 		}
 	}
+	
 
     function buildTotalTrendAndShowChart() {
         if (loadedArtifactIds.length == artifactIds.length && monthlyTrendChartDatasets[0] != null) {
@@ -299,6 +329,7 @@
         updateCharts();
     }
 	
+	
 	function formatNumber(number, minimumFractionDigits) {
 		if (minimumFractionDigits == null) {
 			minimumFractionDigits = 0;
@@ -309,9 +340,11 @@
 		);
 	}
 	
+	
     function getLabel(name) {
         return name;
     }
+
 
     function updateCharts() {
         if (overallTrendChart != null) {
@@ -513,5 +546,12 @@
             overlayOff(); 
         }
     }
-
+	
+	
+	function goToUrl(url) {
+		overlayOn();
+		window.location = (url);
+		return false;
+	}
+	
 </script>
