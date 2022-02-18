@@ -75,22 +75,14 @@
 </div>
 <script>
 	var defaultDateAsString = '2018-12-01';
-	var colorForArtifactMap = getColorForArtifactMap();
+	var allProjectInfos = getallProjectInfos();
 	var totalRowTextColor = 'rgb(0, 0, 0)';
-	var defaultArtifactIds = [];
-	var groupIds = toArray(getQueryParam("groupId"));
-	for (i = 0; i < colorForArtifactMap.length; i++) {
-		if (groupIds == null || groupIds.includes(colorForArtifactMap[i][0].split(":")[0])) {
-			defaultArtifactIds.push(colorForArtifactMap[i][0]);
-		}		
-	}	
-	
-    try {		
-		var artifactIds = toArray(getQueryParam("artifactId"));
-		if (artifactIds == null) {
-			artifactIds = defaultArtifactIds;
-		}
+    try {
+		var groupIdsQueryParam = toArray(getQueryParam("groupId"));
+		var artifactIdsQueryParam = toArray(getQueryParam("artifactId"));
+		var aliasQueryParam = toArray(getQueryParam("alias"));
 		
+		var artifactIds = selectProjectInfos(groupIdsQueryParam, artifactIdsQueryParam, aliasQueryParam);
 		buildSummary(artifactIds);
 		var startDateQueryParam = getQueryParam("startDate");
 		var monthsQueryParam = getQueryParam("months");
@@ -133,15 +125,31 @@
             launchAsyncCallForOne(artifactIds[i], 3);
         }		
     } catch (error) {
-        location.reload();
+        //location.reload();
     }
 	
-	function getColorForArtifactMap() {
-		var allProjectInfos = getAllProjectInfos().responseJSON;
+	function selectProjectInfos(groupIdValues, artifactIdValues, aliasValues) {
+		var artifactIds = [];
 		for (i = 0; i < allProjectInfos.length; i++) {
-            allProjectInfos[i][1] = hexToRgb(allProjectInfos[i][1]);
+			if (
+				(groupIdValues == null || groupIdValues.includes(allProjectInfos[i][0].split(":")[0])) && 
+				((artifactIdValues == null && aliasValues == null) || 
+				(artifactIdValues != null && artifactIdValues.includes(allProjectInfos[i][0])) || 
+				(aliasValues != null && aliasValues.includes(allProjectInfos[i][1])))
+			) {
+				artifactIds.push(allProjectInfos[i][0]);
+			}		
+		}
+		return artifactIds;
+		
+	}
+	
+	function getallProjectInfos() {
+		var allallProjectInfos = getAllallProjectInfos().responseJSON;
+		for (i = 0; i < allallProjectInfos.length; i++) {
+            allallProjectInfos[i][2] = hexToRgb(allallProjectInfos[i][2]);
         }
-		return allProjectInfos;
+		return allallProjectInfos;
 	}
 	
 	function hexToRgb(hex) {
@@ -310,20 +318,20 @@
 	
 	function getRandomColor(artifactId) {
 		var artifactForColor;
-		for (i = 0; i < colorForArtifactMap.length; i++) {
-			if (colorForArtifactMap[i][0] == artifactId) {
-				artifactForColor = colorForArtifactMap[i];
+		for (i = 0; i < allProjectInfos.length; i++) {
+			if (allProjectInfos[i][0] == artifactId) {
+				artifactForColor = allProjectInfos[i];
 				break;				
 			}
         }
 		if (artifactForColor == null) {
 			artifactForColor = [artifactId, null];
-			colorForArtifactMap.push(artifactForColor);
+			allProjectInfos.push(artifactForColor);
 		}
-		if (artifactForColor[1] == null) {
-			artifactForColor[1] = 'rgb(' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ')';
+		if (artifactForColor[2] == null) {
+			artifactForColor[2] = 'rgb(' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ')';
 		}
-		return artifactForColor[1];
+		return artifactForColor[2];
 	}
 
 
@@ -350,7 +358,7 @@
         });
     }
 
-	function getAllProjectInfos() {
+	function getAllallProjectInfos() {
         var url = './../nexus-connector/project-info';
         return jQuery.ajax({
             url: url,
