@@ -9,12 +9,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +25,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -166,7 +169,7 @@ public class NexusConnector {
 
 	private Project getProject(GetStatsInput input) {
 		for (Project project : allProjects) {
-			if (project.getGroupName().equals(input.getGroupId()) && containsArtifactId(project, input.getArtifactId())) {
+			if (project.getGroupName().equals(input.getGroupId()) && containsArtifactIds(project, input.getArtifactId())) {
 				return project;
 			}
 		}
@@ -174,14 +177,29 @@ public class NexusConnector {
 		return null;
 	}
 
-	private boolean containsArtifactId(Project project, String artifactId) {
-		return getArtifact(project, artifactId) != null;
+	private Project getProject(String projectId) {
+		for (Project project : allProjects) {
+			if (project.getGroupName().equals(projectId)) {
+				return project;
+			}
+		}
+		return null;
 	}
 
-	private Project.Artifact getArtifact(Project project, String artifactId) {
-		return Optional.ofNullable(project.getArtifacts().get(artifactId)).orElseGet(() ->
-			project.getArtifacts().values().stream().filter(artifact -> artifact.getAlias().equals(artifactId)).findFirst().orElseGet(() -> null)
-		);
+	public Collection<Artifact> getArtifactForAliases(Project project, Collection<String> aliases) {
+		return get(project, Project.Artifact::getAlias, aliases);
+	}
+
+	private boolean containsArtifactIds(Project project, String... artifactIds) {
+		return containsArtifactIds(project, Arrays.asList(artifactIds));
+	}
+
+	private boolean containsArtifactIds(Project project, Collection<String> artifactIds) {
+		return !get(project, Project.Artifact::getId, artifactIds).isEmpty();
+	}
+
+	private Collection<Project.Artifact> get(Project project, Function<Artifact, String> propertySupplier, Collection<String> values) {
+		return project.getArtifacts().values().stream().filter(artifact ->  values.contains(propertySupplier.apply(artifact))).collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 	private Collection<Project> retrieveProjectInfos(Map<String, Object> configMap) throws ParseException {
@@ -367,37 +385,53 @@ public class NexusConnector {
 			}
 		}
 
-		public GetAllStatsOutput getAllStats(Set<String> groupIds, String artifactId, Date startDate, Integer months)
+		public GetAllStatsOutput getAllStats(Set<String> groupIds, Set<String> aliases, Set<String> artifactIds, Date startDate, Integer months)
 				throws ParseException, JAXBException, InterruptedException, ExecutionException {
 			Collection<CompletableFuture<GetStatsOutput>> outputSuppliers = new ArrayList<>();
 			for (NexusConnector nexusConnector : nexusConnectors) {
+				Set<String> artifactsToBeLoaded = new LinkedHashSet<>();
 				for (Project project : nexusConnector.allProjects) {
 					if (groupIds != null && !groupIds.contains(project.getGroupName())) {
 						continue;
 					}
-					if (artifactId == null) {
+					if (artifactIds == null && aliases == null) {
 						for (Map.Entry<String, Project.Artifact> artifactEntry : project.getArtifacts().entrySet()) {
-							outputSuppliers.add(CompletableFuture.supplyAsync(() ->
-								nexusConnector.getStats(
-									toInput(nexusConnector, project, artifactEntry.getKey(), startDate, months)
-								)
-							));
+							artifactsToBeLoaded.add(project.getGroupName() + ":" + artifactEntry.getValue().getId());
 						}
-					} else if (nexusConnector.containsArtifactId(project, artifactId)) {
-						outputSuppliers.add(CompletableFuture.supplyAsync(() ->
-							nexusConnector.getStats(
-								toInput(nexusConnector, project, artifactId, startDate, months)
-							)
-						));
-					} else {
-						logger.warn("artifactId '{}' not found under groupId '{}'", artifactId, project.getGroupName());
 						continue;
 					}
+					if (artifactIds != null) {
+						for (String artifactId : artifactIds) {
+							String[] artifactIdAsSplittedString = artifactId.split(":");
+							if (artifactIdAsSplittedString.length > 1) {
+								if (project.getGroupName().equals(artifactIdAsSplittedString[0]) &&
+									nexusConnector.containsArtifactIds(project, artifactIdAsSplittedString[1])
+								) {
+									artifactsToBeLoaded.add(project.getGroupName() + ":" + artifactIdAsSplittedString[1]);
+								}
+							} else if (nexusConnector.containsArtifactIds(project, artifactIdAsSplittedString[0])) {
+								artifactsToBeLoaded.add(project.getGroupName() + ":" + artifactIdAsSplittedString[0]);
+							}
+						}
+					}
+					if (aliases != null) {
+						Collection<Project.Artifact> artifacts = nexusConnector.getArtifactForAliases(project, aliases);
+						for (Project.Artifact artifact : artifacts) {
+							artifactsToBeLoaded.add(project.getGroupName() + ":" + artifact.getId());
+						}
+					}
+				}
+				for (String projectAndArtifactId : artifactsToBeLoaded) {
+					outputSuppliers.add(CompletableFuture.supplyAsync(() ->
+						nexusConnector.getStats(
+							toInput(nexusConnector, nexusConnector.getProject(projectAndArtifactId.split(":")[0]), projectAndArtifactId.split(":")[1], startDate, months)
+						)
+					));
 				}
 			}
 			GetAllStatsOutput output = merge(outputSuppliers.stream().map(outputSupplier -> outputSupplier.join()).collect(Collectors.toList()));
 			if (output == null) {
-				throw new IllegalArgumentException("No items found for Group with id '" + groupIds + "' and for artifact with id '" + artifactId + "'");
+				throw new IllegalArgumentException("No items found for Group with id '" + groupIds + "' and for artifact with id '" + artifactIds + "'" + "' and for aliases with id '" + aliases + "'");
 			}
 			return output;
 		}
@@ -408,7 +442,7 @@ public class NexusConnector {
 			return new GetStatsInput(
 				projectInfo.getGroupId(),
 				projectInfo.getGroupName(),
-				nexusConnector.getArtifact(projectInfo, artifactId).getId(),
+				artifactId,
 				startDate,
 				months != null ? months : nexusConnector.computeDefaultMonths(startDate)
 			);

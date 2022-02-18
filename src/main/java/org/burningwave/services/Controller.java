@@ -56,25 +56,28 @@ public class Controller {
 	@GetMapping(path = "/stats/total-downloads", produces = "application/json")
 	public Object getTotalDownloads(
 		@RequestParam(value = "groupId", required = false) Set<String> groupIds,
-		@RequestParam(value = "artifactId", required = false) String artifactId,
+		@RequestParam(value = "alias", required = false) Set<String> aliases,
+		@RequestParam(value = "artifactId", required = false) Set<String> artifactIds,
 		@RequestParam(value = "startDate", required = false) String startDate,
 		@RequestParam(value = "months", required = false) String months
 	) {
-		Long value = getTotalDownloadsOrNull(groupIds, artifactId, startDate, months);
+		Long value = getTotalDownloadsOrNull(groupIds, aliases, artifactIds, startDate, months);
 		return value != null? value : "null";
 	}
 
 	@GetMapping(path = "/stats/downloads-for-month", produces = "application/json")
 	public Object getDownloadsForMonth(
 		@RequestParam(value = "groupId", required = false) Set<String> groupIds,
-		@RequestParam(value = "artifactId", required = false) String artifactId,
+		@RequestParam(value = "alias", required = false) Set<String> aliases,
+		@RequestParam(value = "artifactId", required = false) Set<String> artifactIds,
 		@RequestParam(value = "startDate", required = false) String startDate,
 		@RequestParam(value = "months", required = false) String months
 	) {
 		try {
 			return nexusConnectorGroup.getAllStats(
 				groupIds,
-				artifactId,
+				aliases,
+				artifactIds,
 				startDate != null ? new SimpleDateFormat("yyyy-MM").parse(startDate) : null,
 				months != null ? Integer.valueOf(months) : null
 			).getDownloadsForMonth();
@@ -86,8 +89,9 @@ public class Controller {
 
 	@GetMapping(path = "/stats/total-downloads-badge", produces = "image/svg+xml")
 	public Object getTotalDownloadsBadge(
-		@RequestParam(value = "groupId", required = false) Set<String> gropuIds,
-		@RequestParam(value = "artifactId", required = false) String artifactId,
+		@RequestParam(value = "groupId", required = false) Set<String> groupIds,
+		@RequestParam(value = "alias", required = false) Set<String> aliases,
+		@RequestParam(value = "artifactId", required = false) Set<String> artifactIds,
 		@RequestParam(value = "startDate", required = false) String startDate,
 		@RequestParam(value = "months", required = false) String months,
 		HttpServletResponse response
@@ -95,8 +99,8 @@ public class Controller {
 		response.setHeader("Cache-Control", "no-store");
 		String label = "artifact downloads";
 		return badge.build(
-			getTotalDownloadsOrNull(gropuIds, artifactId, startDate, months),
-			artifactId != null ? artifactId + " " + label : label,
+			getTotalDownloadsOrNull(groupIds, aliases, artifactIds, startDate, months),
+			label,
 			label,
 			"#4c1",
 			125
@@ -122,7 +126,7 @@ public class Controller {
 		String label = "GitHub stars";
 		return badge.build(
 			getStarCountOrNull(username, repositoryName),
-			repositoryName != null ? repositoryName + " " + label : label,
+			label,
 			"GitHub stars", "#78e", 93
 		);
 	}
@@ -142,11 +146,12 @@ public class Controller {
 		response.sendRedirect("https://www.burningwave.org/");
 	}
 
-	private Long getTotalDownloadsOrNull(Set<String> groupIds, String artifactId, String startDate, String months) {
+	private Long getTotalDownloadsOrNull(Set<String> groupIds, Set<String> aliases, Set<String> artifactIds, String startDate, String months) {
 		try {
 			return nexusConnectorGroup.getAllStats(
 				groupIds,
-				artifactId,
+				aliases,
+				artifactIds,
 				startDate != null ? new SimpleDateFormat("yyyy-MM").parse(startDate) : null,
 				months != null ? Integer.valueOf(months) : null
 			).getTotalDownloads();

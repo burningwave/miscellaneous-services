@@ -132,7 +132,7 @@
 		var artifactIds = [];
 		for (i = 0; i < allProjectInfos.length; i++) {
 			if (
-				(groupIdValues == null || groupIdValues.includes(allProjectInfos[i][0].split(":")[0])) && 
+				(groupIdValues == null || groupIdValues.includes(allProjectInfos[i][0].split(":")[0])) &&
 				((artifactIdValues == null && aliasValues == null) || 
 				(artifactIdValues != null && artifactIdValues.includes(allProjectInfos[i][0])) || 
 				(aliasValues != null && aliasValues.includes(allProjectInfos[i][1])))
