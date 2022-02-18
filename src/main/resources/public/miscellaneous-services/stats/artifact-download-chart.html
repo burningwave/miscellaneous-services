@@ -5,7 +5,16 @@
 <script type='text/javascript' src='./../js/jquery-3.6.0.js'></script>
 <script type='text/javascript' src="./../js/Chart.min.js"></script>
 <script type='text/javascript' src="./../js/moment.min.js"></script>
-<style> 
+<style>
+	@font-face {
+	    font-family: 'Aldo Pro Book';
+	    src: local('Aldo Pro Book'), local('Aldo-Pro-Book'),
+	        url('https://burningwave.github.io/assets/fonts/AldoPro-Bold.woff2') format('woff2'),
+	        url('https://burningwave.github.io/assets/fonts/AldoPro-Bold.woff') format('woff'),
+	        url('https://burningwave.github.io/assets/fonts/AldoPro-Bold.ttf') format('truetype');
+	    font-weight: normal;
+	    font-style: normal;
+	}
     #loader { 
         border: 12px solid #f7bc12; 
         border-radius: 50%; 
@@ -75,6 +84,9 @@
 		<div id="monthlyTrendChartDiv" style="max-width: 100%; margin: auto;">
 			<canvas id="monthlyTrendChart"></canvas>
 		</div>
+	</div>
+	<div style="margin-top: 30px; text-align: right;">
+		Powered by <span style="font-family: 'Aldo Pro Book'; font-size: 21px; color: #e54d1d; font-style: italic; font-weight: bold;"><a href="https://www.burningwave.org/">Burningwave<a></span>
 	</div>
 </div>
 <script>
