@@ -188,11 +188,13 @@ public class Application {
 				@Override
 				public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
 					if (application.schemeAndHostName == null) {
-						synchronized(this) {
-							application.schemeAndHostName = cache.load(Application.SCHEME_AND_HOST_NAME_CACHE_KEY);
+						synchronized(application) {
 							if (application.schemeAndHostName == null) {
-								application.schemeAndHostName = ServletUriComponentsBuilder.fromCurrentContextPath().build().toString();
-								cache.store(Application.SCHEME_AND_HOST_NAME_CACHE_KEY, application.schemeAndHostName);
+								application.schemeAndHostName = cache.load(Application.SCHEME_AND_HOST_NAME_CACHE_KEY);
+								if (application.schemeAndHostName == null) {
+									application.schemeAndHostName = ServletUriComponentsBuilder.fromCurrentContextPath().build().toString();
+									cache.store(Application.SCHEME_AND_HOST_NAME_CACHE_KEY, application.schemeAndHostName);
+								}
 							}
 						}
 					}
@@ -215,7 +217,14 @@ public class Application {
 	        entity = new HttpEntity<String>(new HttpHeaders());
 	        getStatsTotalDownloadsUriComponentsBuilder = () -> {
 	        	if (application.schemeAndHostName == null) {
-	        		return null;
+	        		synchronized(application) {
+	        			if (application.schemeAndHostName == null) {
+			        		application.schemeAndHostName = cache.load(Application.SCHEME_AND_HOST_NAME_CACHE_KEY);
+			        		if (application.schemeAndHostName == null) {
+			        			return null;
+			        		}
+	        			}
+	        		}
 	        	}
 	        	return application.schemeAndHostName + "/miscellaneous-services/stats/total-downloads?groupId=org.burningwave&artifactId=core";
 	        };
