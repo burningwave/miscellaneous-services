@@ -143,7 +143,7 @@ public class Controller {
 		} else {
 			logger.error("Cannot clear cache: unauthorized");
 		}
-		response.sendRedirect("https://www.burningwave.org/");
+		response.sendRedirect("https://burningwave.herokuapp.com/miscellaneous-services/stats/artifact-download-chart.html");
 	}
 
 	private Long getTotalDownloadsOrNull(Set<String> groupIds, Set<String> aliases, Set<String> artifactIds, String startDate, String months) {
