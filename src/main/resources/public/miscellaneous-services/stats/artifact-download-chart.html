@@ -103,6 +103,9 @@
 	</div>
 </div>
 <script>
+	window.onhashchange = function() {
+		overlayOff();
+	};
 	var defaultDateAsString = '2018-12-01';
 	var allProjectInfos = getallProjectInfos();
 	var totalRowTextColor = 'rgb(0, 0, 0)';
