@@ -152,7 +152,7 @@
         var attemptedLoadingArtifactIds = [];
         for (i = 0; i < artifactIds.length; i++) {
             launchAsyncCallForOne(artifactIds[i], 3);
-        }		
+        }
     } catch (error) {
         location.reload();
     }
@@ -280,6 +280,12 @@
 		document.getElementById("overlay").style.display = "none";
 		document.documentElement.style.overflow = 'scroll';
 		document.body.scroll = "yes";
+		var messages = toArray(getQueryParam("message"));
+		if (messages != null) {
+			for (i = 0; i < messages.length; i++) {
+	            alert(decodeURIComponent(messages[i]));
+	        }
+		}	
 	}
 	
 	
