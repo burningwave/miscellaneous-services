@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/miscellaneous-services/")
@@ -150,11 +149,7 @@ public class Controller {
 		} else {
 			logger.error(message = "Cannot clear cache: unauthorized");
 		}
-		response.sendRedirect(ServletUriComponentsBuilder.fromCurrentContextPath().pathSegment(
-			"miscellaneous-services",
-			"stats",
-			"artifact-download-chart.html"
-		).queryParam("message", message).build().toUriString());
+		response.sendRedirect("stats/artifact-download-chart.html?message=" + message);
 	}
 
 	private Long getTotalDownloadsOrNull(Set<String> groupIds, Set<String> aliases, Set<String> artifactIds, String startDate, String months) {
