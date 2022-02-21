@@ -84,6 +84,7 @@ public class NexusConnector {
         jaxbContext = JAXBContext.newInstance(GetGroupListOutput.class, GetArtifactListOutput.class, GetStatsOutput.class);
         getStatsUriComponentsBuilder = () -> UriComponentsBuilder.newInstance().scheme("https").host((String)configMap.get("host"));
         allProjects = retrieveProjectInfos(configMap);
+        logger.info("Projects configuration: {}", allProjects);
         inMemoryCache = new ConcurrentHashMap<>();
         timeToLiveForInMemoryCache = Long.parseLong((String)configMap.get("cache.ttl"));
         dayOfTheMonthFromWhichToLeave = Integer.parseInt((String)configMap.get("cache.day-of-the-month-from-which-to-leave"));
