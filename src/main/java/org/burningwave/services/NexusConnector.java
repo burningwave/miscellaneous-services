@@ -253,7 +253,7 @@ public class NexusConnector {
 	        			artifact.setColor(projectAndColorAsSplittedString[1]);
 	        		}
 	        		if (artifactNameAndAlias.length > 1) {
-	        			artifact.setAlias(artifactNameAndAlias[0]);
+	        			artifact.setAlias(artifactNameAndAlias[1]);
 	        		} else if (artifactNameAndAlias.length > 2){
 	        			throw new IllegalArgumentException();
 	        		}
