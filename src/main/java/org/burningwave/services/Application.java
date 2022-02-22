@@ -20,6 +20,8 @@ import org.burningwave.core.assembler.StaticComponentContainer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationContext;
@@ -104,6 +106,7 @@ public class Application {
 	}
 
 	@Bean("nexusConnectorGroup")
+	@ConditionalOnProperty(prefix = "nexus-connector.group", name = "enabled", havingValue = "true")
 	public NexusConnector.Group nexusConnector(
 		@Qualifier("cache") SimpleCache cache,
 		@Qualifier("utility") Utility utility,
@@ -121,6 +124,7 @@ public class Application {
 	}
 
 	@Bean("gitHubConnector")
+	@ConditionalOnProperty(prefix = "github-connector", name = "enabled", havingValue = "true")
 	GitHubConnector gitHubConnector(
 		@Qualifier("gitHubConnector.config") Map<String, String> configMap,
 		SimpleCache cache
@@ -138,6 +142,7 @@ public class Application {
 	}
 
 	@Bean("applicationSelfConnector")
+	@ConditionalOnExpression(value = "!'${scheduled-operations.ping.cron}'.trim().equals('-')")
 	public SelfConnector applicationSelfConnector(
 		Application application,
 		@Qualifier("cache") SimpleCache cache,
