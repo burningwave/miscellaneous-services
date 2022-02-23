@@ -32,7 +32,9 @@ public class DBBasedCache extends SimpleCache.Abst {
     	logger = org.slf4j.LoggerFactory.getLogger(DBBasedCache.class);
     }
 
-	public DBBasedCache(Map<String, Object> configMap) {}
+	public DBBasedCache(Map<String, Object> configMap) {
+		logger.info("Database based cache successfully instantiated");
+	}
 
 	@Override
 	public void store(String key, Serializable object) {

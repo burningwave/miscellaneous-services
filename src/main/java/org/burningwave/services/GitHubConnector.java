@@ -183,6 +183,7 @@ public class GitHubConnector {
 	@NoArgsConstructor
 	@Getter
 	@Setter
+	@ToString
 	public static class GetStarCountOutput implements Serializable {
 
 		private static final long serialVersionUID = 5045091698760296866L;

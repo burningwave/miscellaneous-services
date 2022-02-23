@@ -29,6 +29,7 @@ public class FSBasedCache extends SimpleCache.Abst {
 		basePath = ((String)configMap.get("base-path")).replace("\\", "/");
 		File file = new File(basePath);
 		file.mkdirs();
+		logger.info("File system based cache successfully instantiated");
 	}
 
 
@@ -39,6 +40,7 @@ public class FSBasedCache extends SimpleCache.Abst {
 			ObjectOutputStream oos = new ObjectOutputStream(fout)
 		) {
 			oos.writeObject(object);
+			logger.info("Object with id '{}' stored in the physical cache", key);
 		} catch (Throwable exc) {
 			Throwables.rethrow(exc);
 		}
@@ -49,7 +51,9 @@ public class FSBasedCache extends SimpleCache.Abst {
 	public <T extends Serializable> T  load(String key) {
 		try (FileInputStream fIS = new FileInputStream(basePath + "/" + Base64.getEncoder().encodeToString(key.getBytes(StandardCharsets.UTF_8)) + ".ser");
 			ObjectInputStream oIS = new ObjectInputStream(fIS)) {
-	        return (T) oIS.readObject();
+			T effectiveItem = (T) oIS.readObject();
+			logger.info("Object with id '{}' loaded from physical cache: {}", key, effectiveItem);
+	        return effectiveItem;
 		} catch (FileNotFoundException exc) {
 			return null;
 		} catch (Throwable exc) {

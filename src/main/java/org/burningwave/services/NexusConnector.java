@@ -3,6 +3,7 @@ package org.burningwave.services;
 import static org.burningwave.core.assembler.StaticComponentContainer.Objects;
 import static org.burningwave.core.assembler.StaticComponentContainer.Synchronizer;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
@@ -14,7 +15,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.LinkedHashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -51,15 +51,11 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
 
 public class NexusConnector {
 	private final static org.slf4j.Logger logger;
@@ -80,20 +76,38 @@ public class NexusConnector {
     	logger = org.slf4j.LoggerFactory.getLogger(NexusConnector.class);
     }
 
-    public NexusConnector(Utility utility, Map<String, Object> configMap) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JsonMappingException, JsonProcessingException {
+    public NexusConnector(Utility utility, Configuration nexusConfiguration) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JsonMappingException, JsonProcessingException {
     	this.utility = utility;
     	restTemplate = new RestTemplate();
     	HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", configMap.get("authorization.token.type") + " " + configMap.get("authorization.token"));
+        headers.set("Authorization", nexusConfiguration.getAuthorization().getToken().getType() + " " + nexusConfiguration.getAuthorization().getToken().getValue());
         entity = new HttpEntity<String>(headers);
         jaxbContext = JAXBContext.newInstance(GetGroupListOutput.class, GetArtifactListOutput.class, GetStatsOutput.class);
-        getStatsUriComponentsBuilder = () -> UriComponentsBuilder.newInstance().scheme((String)configMap.get("scheme")).host((String)configMap.get("host"));
-        allProjects = retrieveProjectInfos(configMap);
+        setHost(nexusConfiguration);
+        allProjects = retrieveProjectInfos(nexusConfiguration);
         logger.info("Projects configuration: {}", allProjects);
         inMemoryCache = new ConcurrentHashMap<>();
-        timeToLiveForInMemoryCache = Long.parseLong((String)configMap.get("cache.ttl"));
-        dayOfTheMonthFromWhichToLeave = Integer.parseInt((String)configMap.get("cache.day-of-the-month-from-which-to-leave"));
+        timeToLiveForInMemoryCache = nexusConfiguration.getCache().getTtl();
+        dayOfTheMonthFromWhichToLeave = nexusConfiguration.getCache().getDayOfTheMonthFromWhichToLeave();
     }
+
+	public void setHost(Configuration nexusConfiguration) throws JAXBException {
+		String[] hosts = nexusConfiguration.getHost().split("\\|");
+		for (String host : hosts) {
+    		getStatsUriComponentsBuilder = () -> UriComponentsBuilder.newInstance().scheme(nexusConfiguration.getScheme()).host(host);
+    		try {
+				callGetGroupListRemote();
+				logger.info("User detected on {}", host);
+				return;
+			} catch (org.springframework.web.client.HttpClientErrorException.Forbidden | org.springframework.web.client.HttpClientErrorException.Unauthorized exc) {
+				logger.info("Exception occured for {}", host);
+				if (host == hosts[hosts.length - 1]) {
+					logger.info("Throwing exception", host);
+					throw exc;
+				}
+			}
+    	}
+	}
 
 	public void clearCache() {
 		synchronized(inMemoryCache) {
@@ -217,72 +231,15 @@ public class NexusConnector {
 		return project.getArtifacts().stream().filter(artifact ->  values.contains(propertySupplier.apply(artifact))).collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
-	/* nexus-connector.projects-info property must be in JSon format
-	 * Examples of nexus-connector.projects-info property values:
-		- [{
-		    "name": "org.burningwave",
-		    "artifacts": [{
-		            "name": "jvm-driver",
-		            "color": "00ff00",
-		            "site": "https://burningwave.github.io/jvm-driver/"
-		        }, {
-		            "name": "core",
-		            "alias": "core",
-		            "color": "e54d1d",
-		            "site": "https://burningwave.github.io/core/"
-		        }, {
-		            "name": "graph",
-		            "alias": "graph",
-		            "color": "f7bc12",
-		            "site": "https://burningwave.github.io/graph/"
-		        }, {
-		            "name": "tools",
-		            "color": "066da1",
-		            "site": "https://burningwave.github.io/tools/"
-		        }
-		    ]
-		}, {
-		    "name": "com.github.burningwave",
-		    "artifacts": [{
-		            "name": "bw-core",
-		            "alias": "core",
-		            "color": "e54d1d",
-		            "site": "https://burningwave.github.io/core/"
-		        }, {
-		            "name": "bw-graph",
-		            "alias": "graph",
-		            "color": "f7bc12",
-		            "site": "https://burningwave.github.io/graph/"
-		            }
-		        ]
-		    }
-		]
-
-		- [{
-		    "name": "io.github.toolfactory",
-		    "artifacts": [{
-		            "name": "narcissus",
-		            "color": "402a94",
-		            "site": "https://toolfactory.github.io/narcissus/"
-		        }, {
-		            "name": "jvm-driver",
-		            "color": "00ff00",
-		            "site": "https://toolfactory.github.io/jvm-driver/"
-		            }
-		        ]
-		    }
-		]
-	*/
-	private Collection<Project> retrieveProjectInfos(Map<String, Object> configMap) throws ParseException, JAXBException, JsonMappingException, JsonProcessingException {
+	private Collection<Project> retrieveProjectInfos(Configuration nexusConfiguration) throws ParseException, JAXBException, JsonMappingException, JsonProcessingException {
 		GetGroupListOutput groupList = callGetGroupListRemote();
 		Collection<Project> projectsInfo = new CopyOnWriteArrayList<>();
-        Calendar startDateAsCalendar = new GregorianCalendar();
-        startDateAsCalendar.setTime(new SimpleDateFormat("yyyy-MM").parse((String)configMap.get("projects-info.start-date")));
+        Calendar startDateAsCalendar = nexusConfiguration.getStartDate();
 		for (GetGroupListOutput.Data.Group group : groupList.getData().getGroups()) {
 			Project project = new Project();
 			projectsInfo.add(project);
 			project.setStartDate(startDateAsCalendar);
-			project.setGroupId(group.getId());
+			project.setId(group.getId());
 			project.setName(group.getName());
 			Collection<Project.Artifact> artifacts = new CopyOnWriteArrayList<>();
         	project.setArtifacts(artifacts);
@@ -300,10 +257,9 @@ public class NexusConnector {
 			}
 		}
 
-		String projectsInfoAsString = (String)configMap.get("projects-info");
-		if (projectsInfoAsString != null && !projectsInfoAsString.isEmpty()) {
-			ObjectMapper mapper = new ObjectMapper();
-			for (Project projectFromConfig : mapper.readValue(projectsInfoAsString, Project[].class)) {
+		Collection<Project> projects = nexusConfiguration.getProject();
+		if (projects != null) {
+			for (Project projectFromConfig : projects) {
 				Project project = getProject(projectsInfo, projectFromConfig.getName());
 				if (project == null) {
 					throw new IllegalArgumentException("Project named " + projectFromConfig.getName() + " not found on Nexus");
@@ -313,20 +269,13 @@ public class NexusConnector {
 					if (artifact == null) {
 						throw new IllegalArgumentException("Artifact named " + artifactFromConfig.getName() + " not found on Nexus");
 					}
-					setIfNotNull(artifact::setAlias, artifactFromConfig::getAlias);
-					setIfNotNull(artifact::setColor, artifactFromConfig::getColor);
-					setIfNotNull(artifact::setSite, artifactFromConfig::getSite);
+					utility.setIfNotNull(artifact::setAlias, artifactFromConfig::getAlias);
+					utility.setIfNotNull(artifact::setColor, artifactFromConfig::getColor);
+					utility.setIfNotNull(artifact::setSite, artifactFromConfig::getSite);
 				}
 			}
 		}
         return projectsInfo;
-	}
-
-	private <T> void setIfNotNull(Consumer<T> target, Supplier<T> source) {
-		T value = source.get();
-		if (value != null) {
-			target.accept(value);
-		}
 	}
 
 	private String getKey(GetStatsInput input) {
@@ -394,12 +343,71 @@ public class NexusConnector {
 		return output;
 	}
 
+	@lombok.NoArgsConstructor
+	@lombok.Getter
+	@lombok.Setter
+	@lombok.ToString
+	@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+	public static class Configuration implements Serializable {
+
+		private static final long serialVersionUID = 1184292213929598477L;
+
+		@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM")
+		private Calendar startDate;
+		private String host;
+		private String scheme;
+		private Boolean enabled;
+		private Cache cache;
+		private Authorization authorization;
+
+		private Collection<Project> project;
+
+		@lombok.NoArgsConstructor
+		@lombok.Getter
+		@lombok.Setter
+		@lombok.ToString
+		@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+		public static class Authorization implements Serializable {
+
+			private static final long serialVersionUID = -782745729613213518L;
+
+			private Token token;
+
+			@lombok.NoArgsConstructor
+			@lombok.Getter
+			@lombok.Setter
+			@lombok.ToString
+			@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+			public static class Token implements Serializable {
+
+				private static final long serialVersionUID = -3121176453599817634L;
+
+				private String type;
+				private String value;
+			}
+		}
+
+		@lombok.NoArgsConstructor
+		@lombok.Getter
+		@lombok.Setter
+		@lombok.ToString
+		public static class Cache implements Serializable {
+
+			private static final long serialVersionUID = -5248107701847556177L;
+
+			private Long ttl;
+			private Integer dayOfTheMonthFromWhichToLeave;
+
+
+		}
+	}
+
 	@XmlRootElement(name = "statsProjectListResp")
 	@XmlAccessorType(XmlAccessType.FIELD)
-	@NoArgsConstructor
-	@Getter
-	@Setter
-	@ToString
+	@lombok.NoArgsConstructor
+	@lombok.Getter
+	@lombok.Setter
+	@lombok.ToString
 	public static class GetGroupListOutput implements Serializable {
 
 		private static final long serialVersionUID = 818135083673471322L;
@@ -409,10 +417,10 @@ public class NexusConnector {
 
 		@XmlAccessorType(XmlAccessType.FIELD)
 		@XmlType(namespace = "GetGroupListOutput.Data")
-		@NoArgsConstructor
-		@Getter
-		@Setter
-		@ToString
+		@lombok.NoArgsConstructor
+		@lombok.Getter
+		@lombok.Setter
+		@lombok.ToString
 		public static class Data implements Serializable {
 
 			private static final long serialVersionUID = 1845567476647298831L;
@@ -421,10 +429,10 @@ public class NexusConnector {
 			private List<Group> groups;
 
 			@XmlAccessorType(XmlAccessType.FIELD)
-			@NoArgsConstructor
-			@Getter
-			@Setter
-			@ToString
+			@lombok.NoArgsConstructor
+			@lombok.Getter
+			@lombok.Setter
+			@lombok.ToString
 			public static class Group implements Serializable {
 
 				private static final long serialVersionUID = 2507704512441988141L;
@@ -439,10 +447,10 @@ public class NexusConnector {
 
 	@XmlRootElement(name = "statsCoordResp")
 	@XmlAccessorType(XmlAccessType.FIELD)
-	@NoArgsConstructor
-	@Getter
-	@Setter
-	@ToString
+	@lombok.NoArgsConstructor
+	@lombok.Getter
+	@lombok.Setter
+	@lombok.ToString
 	public static class GetArtifactListOutput implements Serializable {
 
 		private static final long serialVersionUID = 8251590612495213606L;
@@ -452,10 +460,10 @@ public class NexusConnector {
 
 		@XmlAccessorType(XmlAccessType.FIELD)
 		@XmlType(namespace = "GetArtifactListOutput.Data")
-		@NoArgsConstructor
-		@Getter
-		@Setter
-		@ToString
+		@lombok.NoArgsConstructor
+		@lombok.Getter
+		@lombok.Setter
+		@lombok.ToString
 		public static class Data implements Serializable {
 
 			private static final long serialVersionUID = 159613227785489872L;
@@ -467,11 +475,11 @@ public class NexusConnector {
 
 	}
 
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@Getter
-	@Setter
-	@ToString
+	@lombok.NoArgsConstructor
+	@lombok.AllArgsConstructor
+	@lombok.Getter
+	@lombok.Setter
+	@lombok.ToString
     public static class GetStatsInput {
 
     	private String projectId;
@@ -482,10 +490,10 @@ public class NexusConnector {
 
     }
 
-    @NoArgsConstructor
-    @Getter
-    @Setter
-    @ToString
+    @lombok.NoArgsConstructor
+    @lombok.Getter
+    @lombok.Setter
+    @lombok.ToString
     public static class GetAllStatsOutput implements Serializable {
 
 		private static final long serialVersionUID = 287571224336835644L;
@@ -497,10 +505,10 @@ public class NexusConnector {
 
 	@XmlRootElement(name = "statsTimelineResp")
 	@XmlAccessorType(XmlAccessType.FIELD)
-	@NoArgsConstructor
-	@Getter
-	@Setter
-	@ToString
+	@lombok.NoArgsConstructor
+	@lombok.Getter
+	@lombok.Setter
+	@lombok.ToString
 	public static class GetStatsOutput implements Serializable {
 
 		private static final long serialVersionUID = 6761217401866880541L;
@@ -513,10 +521,10 @@ public class NexusConnector {
 
 		@XmlAccessorType(XmlAccessType.FIELD)
 		@XmlType(namespace = "GetStatsOutput.Data")
-		@NoArgsConstructor
-		@Getter
-		@Setter
-		@ToString
+		@lombok.NoArgsConstructor
+		@lombok.Getter
+		@lombok.Setter
+		@lombok.ToString
 		public static class Data implements Serializable {
 
 			private static final long serialVersionUID = -5929067539263340061L;
@@ -540,10 +548,10 @@ public class NexusConnector {
 			private Timeline timeline;
 
 			@XmlAccessorType(XmlAccessType.FIELD)
-			@NoArgsConstructor
-			@Getter
-			@Setter
-			@ToString
+			@lombok.NoArgsConstructor
+			@lombok.Getter
+			@lombok.Setter
+			@lombok.ToString
 			public static class Timeline implements Serializable {
 
 				private static final long serialVersionUID = 2507704512441988141L;
@@ -559,26 +567,57 @@ public class NexusConnector {
 	public static class Group {
 		private Collection<NexusConnector> nexusConnectors;
 
-		public Group(SimpleCache cache, Utility utility, Map<String, Object> configMap) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JAXBException, ParseException, JsonMappingException, JsonProcessingException {
-			configMap = new LinkedHashMap<>(configMap);
-			Map<String, Map<String, Object>> allNexusConfigurations = new LinkedHashMap<>();
-			String startDate = (String)configMap.remove("projects-info.start-date");
-			for (Map.Entry<String, Object> confEntry : configMap.entrySet()) {
-				String[] mapEntryAsStringArray;
-				if (confEntry.getKey().matches("\\d{0,}\\..*?")) {
-					mapEntryAsStringArray = confEntry.getKey().split("\\.", 2);
-				} else {
-					mapEntryAsStringArray = new String[]{"0", confEntry.getKey()};
+		public Group(SimpleCache cache, Utility utility, Map<String, Object> configMap) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JAXBException, ParseException, IOException {
+
+			ObjectMapper mapper = new ObjectMapper();
+			Configuration configuration = mapper.readValue(
+				this.getClass().getClassLoader().getResourceAsStream("nexus-connector.group.config.default.json"),
+				Configuration.class
+			);
+			Configuration customConfiguration = mapper.readValue(
+				(String)configMap.get("config"),
+				Configuration.class
+			);
+			Project customDefaultProjectConfig = customConfiguration.getDefaultProjectConfig();
+			if (customDefaultProjectConfig != null && customDefaultProjectConfig.getStartDate() != null) {
+				configuration.getDefaultProjectConfig().setStartDate(customDefaultProjectConfig.getStartDate());
+			}
+			Iterator<NexusConnector.Configuration> defaultNexusConnectorConfigItr = configuration.getConnector().iterator();
+			NexusConnector.Configuration defaultNexusConnectorConfig = defaultNexusConnectorConfigItr.next();
+			defaultNexusConnectorConfigItr.remove();
+			for (NexusConnector.Configuration nexusConnectorConfig : customConfiguration.getConnector()) {
+				NexusConnector.Configuration.Authorization.Token token = nexusConnectorConfig.getAuthorization().getToken();
+				if (token.getType() == null) {
+					token.setType(defaultNexusConnectorConfig.getAuthorization().getToken().getType());
 				}
-				Map<String, Object> nexusConnectionConfig = allNexusConfigurations.computeIfAbsent(mapEntryAsStringArray[0], key -> new LinkedHashMap<>());
-				nexusConnectionConfig.put(mapEntryAsStringArray[1], confEntry.getValue());
+				NexusConnector.Configuration.Cache cacheConfig = nexusConnectorConfig.getCache();
+				if (cacheConfig == null) {
+					nexusConnectorConfig.setCache(defaultNexusConnectorConfig.getCache());
+				} else {
+					if (cacheConfig.getDayOfTheMonthFromWhichToLeave() == null) {
+						cacheConfig.setDayOfTheMonthFromWhichToLeave(defaultNexusConnectorConfig.getCache().getDayOfTheMonthFromWhichToLeave());
+					}
+					if (cacheConfig.getTtl() == null) {
+						cacheConfig.setTtl(defaultNexusConnectorConfig.getCache().getTtl());
+					}
+				}
+				if (nexusConnectorConfig.getHost() == null) {
+					nexusConnectorConfig.setHost(defaultNexusConnectorConfig.getHost());
+				}
+				if (nexusConnectorConfig.getScheme() == null) {
+					nexusConnectorConfig.setScheme(defaultNexusConnectorConfig.getScheme());
+				}
+				if (nexusConnectorConfig.getEnabled() == null) {
+					nexusConnectorConfig.setEnabled(defaultNexusConnectorConfig.getEnabled());
+				}
+				configuration.getConnector().add(nexusConnectorConfig);
 			}
 			nexusConnectors = ConcurrentHashMap.newKeySet();
-			for (Map<String, Object> nexusConfiguration : allNexusConfigurations.values()) {
-				if (!Boolean.valueOf((String)nexusConfiguration.get("enabled"))) {
+			for (org.burningwave.services.NexusConnector.Configuration nexusConfiguration : configuration.getConnector()) {
+				if (!nexusConfiguration.getEnabled()) {
 					continue;
 				}
-				nexusConfiguration.put("projects-info.start-date", startDate);
+				nexusConfiguration.setStartDate(configuration.getDefaultProjectConfig().getStartDate());
 				NexusConnector nexusConnector = new NexusConnector(utility, nexusConfiguration);
 				nexusConnector.cache = cache;
 				nexusConnectors.add(nexusConnector);
@@ -701,57 +740,44 @@ public class NexusConnector {
 			}
 			return projectInfos.values();
 		}
+
+		@lombok.NoArgsConstructor
+		@lombok.Getter
+		@lombok.Setter
+		@lombok.ToString
+		@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+		public static class Configuration implements Serializable {
+
+			private static final long serialVersionUID = -6792668118990450187L;
+
+			private Project defaultProjectConfig;
+			private Collection<NexusConnector.Configuration> connector;
+
+		}
 	}
 
-
+	@lombok.NoArgsConstructor
+	@lombok.Getter
+	@lombok.Setter
+	@lombok.ToString
+	@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 	public static class Project implements Serializable {
 
 		private static final long serialVersionUID = -5218467892927341444L;
 
+		@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM")
 		private Calendar startDate;
 		private String id;
 		private String name;
 		private Collection <Artifact> artifacts;
 
 
-		public Calendar getStartDate() {
-			return startDate;
-		}
-		public void setStartDate(Calendar startDate) {
-			this.startDate = startDate;
-		}
-
-
-		public String getId() {
-			return id;
-		}
-		public void setGroupId(String groupId) {
-			this.id = groupId;
-		}
-
-
-		public String getName() {
-			return name;
-		}
-		public void setName(String groupName) {
-			this.name = groupName;
-		}
-
-
-		public Collection<Artifact> getArtifacts() {
-			return artifacts;
-		}
-		public void setArtifacts(Collection<Artifact> artifacts) {
-			this.artifacts = artifacts;
-		}
-
-		@Override
-		public String toString() {
-			return "Project [startDate=" + startDate + ", id=" + id + ", name=" + name + ", artifacts=" + artifacts
-					+ "]";
-		}
-
-		static class Artifact implements Serializable {
+		@lombok.NoArgsConstructor
+		@lombok.Getter
+		@lombok.Setter
+		@lombok.ToString
+		@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+		public static class Artifact implements Serializable {
 
 			private static final long serialVersionUID = -222016209791534123L;
 
@@ -759,40 +785,6 @@ public class NexusConnector {
 			private String alias;
 			private String color;
 			private String site;
-
-			public String getName() {
-				return name;
-			}
-			public void setName(String value) {
-				this.name = value;
-			}
-
-			public String getAlias() {
-				return alias;
-			}
-			public void setAlias(String alias) {
-				this.alias = alias;
-			}
-
-			public String getColor() {
-				return color;
-			}
-			public void setColor(String color) {
-				this.color = color;
-			}
-
-			public String getSite() {
-				return site;
-			}
-			public void setSite(String site) {
-				this.site = site;
-			}
-
-
-			@Override
-			public String toString() {
-				return "Artifact [name=" + name + ", alias=" + alias + ", color=" + color + ", site=" + site + "]";
-			}
 
 		}
 	}

@@ -1,0 +1,19 @@
+{
+	"defaultProjectConfig": {
+		"startDate": "2018-12"
+	},
+	"connector": [{
+		"host" : "oss.sonatype.org|s01.oss.sonatype.org",
+		"scheme": "https",
+		"authorization": {
+			"token" : {
+				"type": "Basic"
+			}
+		},
+		"enabled": "true",
+		"cache": {
+			"ttl": 2592000000,
+			"dayOfTheMonthFromWhichToLeave": 6
+		}
+	}]
+}

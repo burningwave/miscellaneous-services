@@ -2,24 +2,7 @@ application.authorization.token: ${APPLICATION_AUTHORIZATION_TOKEN}
 application.authorization.token.type: ${APPLICATION_AUTHORIZATION_TOKEN_TYPE:Basic}
 
 nexus-connector.group.enabled: ${NEXUS_CONNECTOR_ENABLED:true}
-nexus-connector.projects-info.start-date: ${NEXUS_CONNECTOR_ALL_PROJECTS_INFO_START_DATE:2018-12}
-nexus-connector:
-   - host: ${NEXUS_CONNECTOR_0_HOST:oss.sonatype.org}
-     scheme: ${NEXUS_CONNECTOR_0_SCHEME:https}
-     authorization.token: ${NEXUS_CONNECTOR_0_AUTHORIZATION_TOKEN}
-     authorization.token.type: ${NEXUS_CONNECTOR_0_AUTHORIZATION_TOKEN_TYPE:Basic}
-     projects-info: ${NEXUS_CONNECTOR_0_PROJECTS_INFO:}
-     cache.ttl: ${NEXUS_CONNECTOR_0_CACHE_TTL:2592000000}
-     cache.day-of-the-month-from-which-to-leave: ${NEXUS_CONNECTOR_0_CACHE_DAY_OF_THE_MONTH_FROM_WHICH_TO_LEAVE:6}
-     enabled: ${NEXUS_CONNECTOR_0_ENABLED:true}
-   - host: ${NEXUS_CONNECTOR_1_HOST:s01.oss.sonatype.org}
-     scheme: ${NEXUS_CONNECTOR_1_SCHEME:https}
-     authorization.token: ${NEXUS_CONNECTOR_1_AUTHORIZATION_TOKEN}
-     authorization.token.type: ${NEXUS_CONNECTOR_1_AUTHORIZATION_TOKEN_TYPE:Basic}
-     projects-info: ${NEXUS_CONNECTOR_1_PROJECTS_INFO:}
-     cache.ttl: ${NEXUS_CONNECTOR_1_CACHE_TTL:2592000000}
-     cache.day-of-the-month-from-which-to-leave: ${NEXUS_CONNECTOR_1_CACHE_DAY_OF_THE_MONTH_FROM_WHICH_TO_LEAVE:6}
-     enabled: ${NEXUS_CONNECTOR_1_ENABLED:true}
+nexus-connector.group.config: ${NEXUS_CONNECTOR_GROUP_CONFIG} 
 
 github-connector.enabled: ${GITHUB_CONNECTOR_ENABLED:true}
 github-connector.host: ${GITHUB_CONNECTOR_HOST:api.github.com}
@@ -27,9 +10,8 @@ github-connector.authorization.token: ${GITHUB_CONNECTOR_AUTHORIZATION_TOKEN}
 github-connector.authorization.token.type: ${GITHUB_CONNECTOR_AUTHORIZATION_TOKEN_TYPE:Bearer}
 github-connector.cache.ttl: ${GITHUB_CONNECTOR_CACHE_TTL:86400000}
 
-cache.type: ${CACHE_TYPE:org.burningwave.DBBasedCache}
-#cache.type: ${CACHE_TYPE:org.burningwave.FSBasedCache}
-#cache.base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
+cache.type: ${CACHE_TYPE:File system based}
+cache.base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
 
 spring.datasource.url: ${JDBC_DATABASE_URL:jdbc:postgresql://localhost:5432/postgres}
 spring.datasource.username: ${JDBC_DATABASE_USERNAME:postgres}
@@ -39,7 +21,8 @@ spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation: true
 spring.jpa.properties.hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
 spring.jpa.hibernate.ddl-auto: update
 
-scheduled-operations.ping.cron: ${SCHEDULED_OPERATIONS_PING_CRON:-}
+#To disable this set the environment property SCHEDULED_OPERATIONS_PING_CRON to - 
+scheduled-operations.ping.cron: ${SCHEDULED_OPERATIONS_PING_CRON:0 0/25 * * * *}
 scheduled-operations.ping.zone: ${SCHEDULED_OPERATIONS_PING_ZONE:UTC}
 
 burningwave.core.static-component-container.managed-logger.repository: 'org.burningwave.core.SLF4JManagedLoggerRepository'

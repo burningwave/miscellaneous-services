@@ -12,6 +12,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Random;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class Utility {
 
@@ -84,6 +86,13 @@ public class Utility {
 		Random obj = new Random();
 		int rand_num = obj.nextInt(0xffffff + 1);
 		return String.format("%06x", rand_num);
+	}
+
+	public <T> void setIfNotNull(Consumer<T> target, Supplier<T> source) {
+		T value = source.get();
+		if (value != null) {
+			target.accept(value);
+		}
 	}
 
 }

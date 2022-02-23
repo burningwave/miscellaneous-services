@@ -1,7 +1,6 @@
 package org.burningwave.services;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
 import java.util.HashMap;
@@ -14,11 +13,15 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBException;
 
 import org.burningwave.Badge;
+import org.burningwave.DBBasedCache;
+import org.burningwave.FSBasedCache;
 import org.burningwave.SimpleCache;
 import org.burningwave.Utility;
 import org.burningwave.core.assembler.StaticComponentContainer;
+import org.burningwave.services.Application.DBConfig;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -26,6 +29,11 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -39,19 +47,12 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-
 @SpringBootApplication
-//Uncomment this to use the FSBasedCache
-//@EnableAutoConfiguration(exclude = {
-//	org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
-//	org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
-//})
-//Comment this to use the FSBasedCache
-@EnableJpaRepositories(basePackages = {"org.burningwave"}, considerNestedRepositories = true)
-//Comment this to use the FSBasedCache
-@EntityScan(basePackages = {"org.burningwave"})
+@EnableAutoConfiguration(exclude = {
+	org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
+	org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
+})
+@Import({DBConfig.class})
 @EnableScheduling
 @EnableAsync
 public class Application {
@@ -94,16 +95,17 @@ public class Application {
 	}
 
 	@Bean("cache")
+	@ConditionalOnProperty(prefix = "cache", name = "type", havingValue = "File system based")
 	public SimpleCache cache(
 		@Qualifier("cacheConfig") Map<String, String> configMap
 	) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
 		Map<String, Object> configuration = new HashMap<>();
 		configuration.putAll(configMap);
-		return (SimpleCache)Class.forName(configMap.get("type")).getDeclaredConstructor(Map.class).newInstance(configuration);
+		return new FSBasedCache(configuration);
 	}
 
 	@Bean("nexusConnectorGroup.config")
-	@ConfigurationProperties("nexus-connector")
+	@ConfigurationProperties("nexus-connector.group")
 	public Map<String, String> nexusConnectorConfig(){
 		return new LinkedHashMap<>();
 	}
@@ -114,7 +116,7 @@ public class Application {
 		@Qualifier("cache") SimpleCache cache,
 		@Qualifier("utility") Utility utility,
 		@Qualifier("nexusConnectorGroup.config") Map<String, String> configMap
-	) throws UnsupportedEncodingException, JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JsonMappingException, JsonProcessingException {
+	) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, IOException {
 		Map<String, Object> configuration = new HashMap<>();
 		configuration.putAll(configMap);
 		return new NexusConnector.Group(cache, utility, configuration);
@@ -240,4 +242,35 @@ public class Application {
 			}
 		}
 	}
+
+	@Import({
+		org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
+		org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
+	})
+	@EnableJpaRepositories(basePackages = {"org.burningwave"}, considerNestedRepositories = true)
+	@EntityScan(basePackages = {"org.burningwave"})
+	@Configuration
+	@Conditional(DBConfig.Condition.class)
+	public static class DBConfig {
+
+		@Bean("cache")
+		public SimpleCache cache(
+			@Qualifier("cacheConfig") Map<String, String> configMap
+		) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
+			Map<String, Object> configuration = new HashMap<>();
+			configuration.putAll(configMap);
+			return new DBBasedCache(configuration);
+		}
+
+		public static class Condition implements org.springframework.context.annotation.Condition {
+
+			@Override
+			public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+		        return "Database based".equals(context.getEnvironment().getProperty("cache.type"));
+			}
+
+		}
+
+	}
+
 }
