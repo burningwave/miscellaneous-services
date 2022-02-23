@@ -9,6 +9,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBException;
 
 import org.burningwave.Badge;
@@ -31,7 +33,9 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @SpringBootApplication
 //Uncomment this to use the FSBasedCache
@@ -47,7 +51,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 @EnableAsync
 public class Application {
 	private final static org.slf4j.Logger logger;
+	final static String SCHEME_AND_HOST_NAME_CACHE_KEY = "SchemeAndHostname";
 	private static ApplicationContext applicationContext;
+	String schemeAndHostName;
 
 	static {
 		logger = org.slf4j.LoggerFactory.getLogger(Application.class);
@@ -144,11 +150,18 @@ public class Application {
 
 	@Bean("applicationSelfConnector")
 	public SelfConnector applicationSelfConnector(
+		Application application,
+		@Qualifier("cache") SimpleCache cache,
 		@Qualifier("applicationSelfConnector.config") Map<String, String> configMap
 	) {
 		Map<String, Object> configuration = new HashMap<>();
 		configuration.putAll(configMap);
-		return new SelfConnector(configuration);
+		return new SelfConnector(application, cache, configuration);
+	}
+
+	@Bean
+	public WebMvcConfigurer webMvcConfigurer(Application application, @Qualifier("cache") SimpleCache cache) {
+		return new WebMvcConfigurer(application, cache);
 	}
 
 	@Scheduled(
@@ -156,37 +169,78 @@ public class Application {
 		zone = "${scheduled-operations.ping.zone}"
 	)
 	@Async
-	public void ping() {
+	public void ping() throws Throwable {
 		applicationContext.getBean(SelfConnector.class).ping();
 	}
+
+	public static class WebMvcConfigurer implements org.springframework.web.servlet.config.annotation.WebMvcConfigurer {
+		private SimpleCache cache;
+		private Application application;
+
+		public WebMvcConfigurer(Application application, SimpleCache cache) {
+			this.cache = cache;
+			this.application = application;
+		}
+
+		@Override
+		public void addInterceptors(InterceptorRegistry registry) {
+			registry.addInterceptor(new HandlerInterceptor() {
+				@Override
+				public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+					if (application.schemeAndHostName == null) {
+						synchronized(application) {
+							if (application.schemeAndHostName == null) {
+								application.schemeAndHostName = cache.load(Application.SCHEME_AND_HOST_NAME_CACHE_KEY);
+								if (application.schemeAndHostName == null) {
+									application.schemeAndHostName = ServletUriComponentsBuilder.fromCurrentContextPath().build().toString();
+									cache.store(Application.SCHEME_AND_HOST_NAME_CACHE_KEY, application.schemeAndHostName);
+								}
+							}
+						}
+					}
+					return HandlerInterceptor.super.preHandle(request, response, handler);
+				}
+			});
+		}
+
+	}
+
 
 	public static class SelfConnector {
 
 		final RestTemplate restTemplate;
 	    final HttpEntity<String> entity;
-	    final Supplier<UriComponentsBuilder> getStatsTotalDownloadsUriComponentsBuilder;
+	    final Supplier<String> getStatsTotalDownloadsUriComponentsBuilder;
 
-	    public SelfConnector(Map<String, Object> configMap)  {
+	    public SelfConnector(Application application, SimpleCache cache, Map<String, Object> configMap) {
 	    	restTemplate = new RestTemplate();
 	        entity = new HttpEntity<String>(new HttpHeaders());
-	        getStatsTotalDownloadsUriComponentsBuilder = () ->
-	        	UriComponentsBuilder.newInstance()
-	        	.scheme("https")
-	        	.host((String)configMap.get("host"))
-	        	.path("/miscellaneous-services/stats/total-downloads")
-	        	.queryParam("groupId", "org.burningwave")
-	        	.queryParam("artifactId", "core");
+	        getStatsTotalDownloadsUriComponentsBuilder = () -> {
+	        	if (application.schemeAndHostName == null) {
+	        		synchronized(application) {
+	        			if (application.schemeAndHostName == null) {
+			        		application.schemeAndHostName = cache.load(Application.SCHEME_AND_HOST_NAME_CACHE_KEY);
+			        		if (application.schemeAndHostName == null) {
+			        			return null;
+			        		}
+	        			}
+	        		}
+	        	}
+	        	return application.schemeAndHostName + "/miscellaneous-services/stats/total-downloads?groupId=org.burningwave&artifactId=core";
+	        };
 	    }
 
-	    public void ping() {
-			String url = getStatsTotalDownloadsUriComponentsBuilder.get().build().toString();
-			restTemplate.exchange(
-				url,
-				HttpMethod.GET,
-				entity,
-				Long.class
-			);
-			org.slf4j.LoggerFactory.getLogger(SelfConnector.class).info("Ping to url '{}' done", url);
+	    public void ping() throws Throwable {
+			String url = getStatsTotalDownloadsUriComponentsBuilder.get();
+			if (url != null) {
+				restTemplate.exchange(
+					url,
+					HttpMethod.GET,
+					entity,
+					Long.class
+				);
+				org.slf4j.LoggerFactory.getLogger(SelfConnector.class).info("Ping to url '{}' done", url);
+			}
 		}
 	}
 }

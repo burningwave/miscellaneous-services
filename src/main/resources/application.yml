@@ -1,6 +1,5 @@
 application.authorization.token: ${APPLICATION_AUTHORIZATION_TOKEN}
 application.authorization.token.type: ${APPLICATION_AUTHORIZATION_TOKEN_TYPE:Basic}
-application.self-connector.host: ${APPLICATION_SELF_CONNECTOR_HOST:burningwave.herokuapp.com}
 
 nexus-connector.projects-info.start-date:  ${NEXUS_CONNECTOR_ALL_PROJECTS_INFO_START_DATE:2018-12}
 nexus-connector:

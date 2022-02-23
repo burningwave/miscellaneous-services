@@ -1,17 +1,17 @@
-<link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/burningwave/burningwave.github.io/main/favicon.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/burningwave/burningwave.github.io/main/only-flame-logo.png">
+<link rel="shortcut icon" type="image/png" href="./../../image/favicon.png">
+<meta property="og:image" content="./../../image/only-flame-logo.png">
 <meta property="twitter:title" content="Artifact downloads" />
 <meta name="twitter:card" content="summary" />
-<script type='text/javascript' src='./../js/jquery-3.6.0.js'></script>
-<script type='text/javascript' src="./../js/Chart.min.js"></script>
-<script type='text/javascript' src="./../js/moment.min.js"></script>
+<script type='text/javascript' src='./../../js/jquery-3.6.0.js'></script>
+<script type='text/javascript' src="./../../js/Chart.min.js"></script>
+<script type='text/javascript' src="./../../js/moment.min.js"></script>
 <style>
 	@font-face {
 	    font-family: 'Aldo Pro Book';
 	    src: local('Aldo Pro Book'), local('Aldo-Pro-Book'),
-	        url('https://burningwave.github.io/assets/fonts/AldoPro-Bold.woff2') format('woff2'),
-	        url('https://burningwave.github.io/assets/fonts/AldoPro-Bold.woff') format('woff'),
-	        url('https://burningwave.github.io/assets/fonts/AldoPro-Bold.ttf') format('truetype');
+	        url('./../../font/AldoPro-Bold.woff2') format('woff2'),
+	        url('./../../font/AldoPro-Bold.woff') format('woff'),
+	        url('./../../font/AldoPro-Bold.ttf') format('truetype');
 	    font-weight: normal;
 	    font-style: normal;
 	}
@@ -104,7 +104,7 @@
 </div>
 <script>
 	var defaultDateAsString = '2018-12-01';
-	var allProjectInfos = getallProjectInfos();
+	var allProjectInfos = getAllProjectInfos();
 	var totalRowTextColor = 'rgb(0, 0, 0)';
     try {
 		var groupIdsQueryParam = toArray(getQueryParam("groupId"));
@@ -154,7 +154,7 @@
             launchAsyncCallForOne(artifactIds[i], 3);
         }		
     } catch (error) {
-        //location.reload();
+        location.reload();
     }
 
 	
@@ -164,23 +164,43 @@
 			if (
 				(groupIdValues == null || groupIdValues.includes(allProjectInfos[i][0].split(":")[0])) &&
 				((artifactIdValues == null && aliasValues == null) || 
-				(artifactIdValues != null && artifactIdValues.includes(allProjectInfos[i][0])) || 
+				(artifactIdValues != null && containsArtifactId(groupIdValues, artifactIdValues, allProjectInfos[i][0])) || 
 				(aliasValues != null && aliasValues.includes(allProjectInfos[i][1])))
 			) {
 				artifactIds.push(allProjectInfos[i][0]);
 			}		
 		}
-		return artifactIds;
-		
+		return artifactIds;	
 	}
 	
 	
-	function getallProjectInfos() {
-		var allallProjectInfos = getAllallProjectInfos().responseJSON;
-		for (i = 0; i < allallProjectInfos.length; i++) {
-            allallProjectInfos[i][2] = hexToRgb(allallProjectInfos[i][2]);
+	function containsArtifactId(groupIdValues, artifactIdValues, artifactId) {
+		for (j = 0; j < artifactIdValues.length; j++) {
+			var artifactIdSplitted = artifactIdValues[j].split(":");
+			if (artifactIdSplitted.length > 1 && artifactId == artifactIdValues[j]) {
+				return true;
+			} else if (artifactIdSplitted.length == 1) {
+				if (groupIdValues != null) {
+					for (k = 0; k < groupIdValues.length; k++) {
+						if ((groupIdValues[k] + ":" + artifactIdSplitted[0]) == artifactId) {
+							return true;
+						}
+					}	
+				} else if (artifactIdSplitted[0] == artifactId.split(":")[1]) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	
+	function getAllProjectInfos() {
+		var values = getAllProjectInfosFromRemote().responseJSON;
+		for (i = 0; i < values.length; i++) {
+            values[i][2] = hexToRgb(values[i][2]);
         }
-		return allallProjectInfos;
+		return values;
 	}
 	
 	
@@ -407,7 +427,7 @@
         });
     }
 
-	function getAllallProjectInfos() {
+	function getAllProjectInfosFromRemote() {
         var url = './../nexus-connector/project-info';
         return jQuery.ajax({
             url: url,
