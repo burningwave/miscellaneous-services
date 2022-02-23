@@ -6,7 +6,7 @@
 A simple application with which is possible:
 * to retrieve [some statistical data](https://burningwave.herokuapp.com/miscellaneous-services/stats/artifact-download-chart.html) from [Nexus](https://oss.sonatype.org/)
 * to generate the artifact downloads badge ->&nbsp;&nbsp;&nbsp;&nbsp;[![Artifact downloads](https://burningwave.herokuapp.com/miscellaneous-services/stats/total-downloads-badge)](#burningwave-miscellaneous-services)
-* to generate the GitHub stars badge ->&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[![GitHub stars](https://burningwave.herokuapp.com/miscellaneous-services/stats/star-count-badge?repository=burningwave:jvm-driver&repository=burningwave:core&repository=burningwave:graph&repository=burningwave:tools&repository=toolfactory:narcissus&repository=toolfactory:jvm-driver)](#burningwave-miscellaneous-services)
+* to generate the GitHub stars badge ->&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[![GitHub stars](https://burningwave.herokuapp.com/miscellaneous-services/stats/star-count-badge?repository=burningwave:jvm-driver&repository=burningwave:core&repository=burningwave:graph&repository=burningwave:tools&repository=toolfactory:narcissus&repository=toolfactory:jvm-driver)](#burningwave-miscellaneous-services)
 
 ## Deploy requirements
 
