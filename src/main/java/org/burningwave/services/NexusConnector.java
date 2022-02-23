@@ -36,6 +36,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
+import javax.xml.bind.annotation.XmlType;
 
 import org.burningwave.SimpleCache;
 import org.burningwave.Throwables;
@@ -80,9 +81,10 @@ public class NexusConnector {
     	HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", configMap.get("authorization.token.type") + " " + configMap.get("authorization.token"));
         entity = new HttpEntity<String>(headers);
-        jaxbContext = JAXBContext.newInstance(GetStatsOutput.class);
-        getStatsUriComponentsBuilder = () -> UriComponentsBuilder.newInstance().scheme("https").host((String)configMap.get("host")).path("/service/local/stats/timeline").queryParam("t", "raw");
+        jaxbContext = JAXBContext.newInstance(GetGroupListOutput.class, GetArtifactListOutput.class, GetStatsOutput.class);
+        getStatsUriComponentsBuilder = () -> UriComponentsBuilder.newInstance().scheme("https").host((String)configMap.get("host"));
         allProjects = retrieveProjectInfos(configMap);
+        logger.info("Projects configuration: {}", allProjects);
         inMemoryCache = new ConcurrentHashMap<>();
         timeToLiveForInMemoryCache = Long.parseLong((String)configMap.get("cache.ttl"));
         dayOfTheMonthFromWhichToLeave = Integer.parseInt((String)configMap.get("cache.day-of-the-month-from-which-to-leave"));
@@ -178,7 +180,11 @@ public class NexusConnector {
 	}
 
 	private Project getProject(String projectId) {
-		for (Project project : allProjects) {
+		return getProject(this.allProjects, projectId);
+	}
+
+	private Project getProject(Collection<Project> projects, String projectId) {
+		for (Project project : projects) {
 			if (project.getGroupName().equals(projectId)) {
 				return project;
 			}
@@ -202,42 +208,58 @@ public class NexusConnector {
 		return project.getArtifacts().values().stream().filter(artifact ->  values.contains(propertySupplier.apply(artifact))).collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
-	private Collection<Project> retrieveProjectInfos(Map<String, Object> configMap) throws ParseException {
-        String projectsInfoAsString = (String)configMap.get("projects-info");
-        String[] projectsInfoAsSplittedString = projectsInfoAsString.split(";");
+	/*Examples of nexus-connector.projects-info property values:
+		org.burningwave/core\e54d1d/jvm-driver\00ff00/graph\f7bc12/tools\066da1;com.github.burningwave/bw-core:core\e54d1d/bw-graph:graph\f7bc12;
+		io.github.toolfactory/jvm-driver\00ff00/narcissus\402a94
+	*/
+	private Collection<Project> retrieveProjectInfos(Map<String, Object> configMap) throws ParseException, JAXBException {
+		GetGroupListOutput groupList = callGetGroupListRemote();
+		Collection<Project> projectsInfo = new ArrayList<>();
         Calendar startDateAsCalendar = new GregorianCalendar();
         startDateAsCalendar.setTime(new SimpleDateFormat("yyyy-MM").parse((String)configMap.get("projects-info.start-date")));
-        Collection<Project> projectsInfo = new ArrayList<>();
-        for (int i = 0; i < projectsInfoAsSplittedString.length; i++) {
-        	Project project = new Project();
-        	project.setStartDate(startDateAsCalendar);
-        	String[] projectInfoAsSplittedString = projectsInfoAsSplittedString[i].split("/");
-        	project.setGroupId(projectInfoAsSplittedString[0]);
-        	project.setGroupName(projectInfoAsSplittedString[1]);
-        	Map<String, Project.Artifact> articactIds = new HashMap<>();
+		for (GetGroupListOutput.Data.Group group : groupList.getData().getGroups()) {
+			Project project = new Project();
+			projectsInfo.add(project);
+			project.setStartDate(startDateAsCalendar);
+			project.setGroupId(group.getId());
+			project.setGroupName(group.getName());
+			Map<String, Project.Artifact> articactIds = new HashMap<>();
         	project.setArtifacts(articactIds);
-        	for (int j = 2; j < projectInfoAsSplittedString.length; j++) {
-        		String[] projectAndColorAsSplittedString = projectInfoAsSplittedString[j].split("\\\\");
-        		Project.Artifact artifact = new Project.Artifact();
-        		if (projectAndColorAsSplittedString.length > 1) {
-        			artifact.setColor(projectAndColorAsSplittedString[1]);
-        		} else {
-        			artifact.setColor(utility.randomHex());
-        		}
-        		String[] projectNames = projectAndColorAsSplittedString[0].split(":");
-        		if (projectNames.length == 1) {
-        			artifact.setAlias(projectNames[0]);
-        			artifact.setId(projectNames[0]);
-        		} else if (projectNames.length == 2) {
-        			artifact.setId(projectNames[0]);
-        			artifact.setAlias(projectNames[1]);
-        		} else {
-        			throw new IllegalArgumentException();
-        		}
-        		articactIds.put(projectNames[0], artifact);
-        	}
-        	projectsInfo.add(project);
-        }
+			GetStatsInput input = new GetStatsInput();
+			input.setGroupId(group.getId());
+			input.setProjectId(group.getName());
+			GetArtifactListOutput artifactList = callGetArtifactListRemote(input);
+			for (String artifactName : artifactList.getData().getArtifacts()) {
+				Project.Artifact artifact = new Project.Artifact();
+				articactIds.put(artifactName, artifact);
+				artifact.setId(artifactName);
+				artifact.setAlias(artifactName);
+				artifact.setColor(utility.randomHex());
+			}
+		}
+
+		String projectsInfoAsString = (String)configMap.get("projects-info");
+		if (projectsInfoAsString != null && !projectsInfoAsString.isEmpty()) {
+	        String[] projectsInfoAsSplittedString = projectsInfoAsString.split(";");
+	        for (int i = 0; i < projectsInfoAsSplittedString.length; i++) {
+	        	String[] projectInfoAsSplittedString = projectsInfoAsSplittedString[i].split("/");
+	        	Project project = getProject(projectsInfo, projectInfoAsSplittedString[0]);
+	        	Map<String, Project.Artifact> articacts = project.getArtifacts();
+	        	for (int j = 1; j < projectInfoAsSplittedString.length; j++) {
+	        		String[] projectAndColorAsSplittedString = projectInfoAsSplittedString[j].split("\\\\");
+	        		String[] artifactNameAndAlias = projectAndColorAsSplittedString[0].split(":");
+	        		Project.Artifact artifact = articacts.get(artifactNameAndAlias[0]);
+	        		if (projectAndColorAsSplittedString.length > 1) {
+	        			artifact.setColor(projectAndColorAsSplittedString[1]);
+	        		}
+	        		if (artifactNameAndAlias.length > 1) {
+	        			artifact.setAlias(artifactNameAndAlias[1]);
+	        		} else if (artifactNameAndAlias.length > 2){
+	        			throw new IllegalArgumentException();
+	        		}
+	        	}
+	        }
+		}
         return projectsInfo;
 	}
 
@@ -253,15 +275,49 @@ public class NexusConnector {
 				input.getMonths());
 	}
 
+	private GetArtifactListOutput callGetArtifactListRemote(GetStatsInput input) throws JAXBException {
+		UriComponents uriComponents =
+			getStatsUriComponentsBuilder.get()
+			.path("/service/local/stats/coord")
+			.pathSegment(input.getGroupId())
+			.queryParam("g", input.getProjectId())
+			.build();
+		ResponseEntity<String> response = restTemplate.exchange(
+			uriComponents.toString(),
+			HttpMethod.GET,
+			entity,
+			String.class
+		);
+		GetArtifactListOutput output = (GetArtifactListOutput) jaxbContext.createUnmarshaller().unmarshal(new StringReader(response.getBody()));
+		return output;
+	}
+
+	private GetGroupListOutput callGetGroupListRemote() throws JAXBException {
+		UriComponents uriComponents =
+			getStatsUriComponentsBuilder.get()
+			.path("/service/local/stats/projects")
+			.build();
+		ResponseEntity<String> response = restTemplate.exchange(
+			uriComponents.toString(),
+			HttpMethod.GET,
+			entity,
+			String.class
+		);
+		GetGroupListOutput output = (GetGroupListOutput) jaxbContext.createUnmarshaller().unmarshal(new StringReader(response.getBody()));
+		return output;
+	}
+
 	private GetStatsOutput callGetStatsRemote(GetStatsInput input) throws JAXBException {
 		UriComponents uriComponents =
-			getStatsUriComponentsBuilder.get().queryParam("p", input.getProjectId())
+			getStatsUriComponentsBuilder.get()
+			.path("/service/local/stats/timeline")
+			.queryParam("t", "raw")
 			.queryParam("g", input.getGroupId())
+			.queryParam("p", input.getProjectId())
 			.queryParamIfPresent("a", Optional.ofNullable(input.getArtifactId()))
 			.queryParam("from", new SimpleDateFormat("yyyyMM").format(input.getStartDate()))
 			.queryParam("nom", input.getMonths())
 			.build();
-
 		ResponseEntity<String> response = restTemplate.exchange(
 			uriComponents.toString(),
 			HttpMethod.GET,
@@ -270,6 +326,79 @@ public class NexusConnector {
 		);
 		GetStatsOutput output = (GetStatsOutput) jaxbContext.createUnmarshaller().unmarshal(new StringReader(response.getBody()));
 		return output;
+	}
+
+	@XmlRootElement(name = "statsProjectListResp")
+	@XmlAccessorType(XmlAccessType.FIELD)
+	@NoArgsConstructor
+	@Getter
+	@Setter
+	@ToString
+	public static class GetGroupListOutput implements Serializable {
+
+		private static final long serialVersionUID = 818135083673471322L;
+
+		@XmlElement
+		private Data data;
+
+		@XmlAccessorType(XmlAccessType.FIELD)
+		@XmlType(namespace = "GetGroupListOutput.Data")
+		@NoArgsConstructor
+		@Getter
+		@Setter
+		@ToString
+		public static class Data implements Serializable {
+
+			private static final long serialVersionUID = 1845567476647298831L;
+
+			@XmlElement(name = "statsProject")
+			private List<Group> groups;
+
+			@XmlAccessorType(XmlAccessType.FIELD)
+			@NoArgsConstructor
+			@Getter
+			@Setter
+			@ToString
+			public static class Group implements Serializable {
+
+				private static final long serialVersionUID = 2507704512441988141L;
+
+				private String id;
+				private String name;
+
+			}
+		}
+
+	}
+
+	@XmlRootElement(name = "statsCoordResp")
+	@XmlAccessorType(XmlAccessType.FIELD)
+	@NoArgsConstructor
+	@Getter
+	@Setter
+	@ToString
+	public static class GetArtifactListOutput implements Serializable {
+
+		private static final long serialVersionUID = 8251590612495213606L;
+
+		@XmlElement
+		private Data data;
+
+		@XmlAccessorType(XmlAccessType.FIELD)
+		@XmlType(namespace = "GetArtifactListOutput.Data")
+		@NoArgsConstructor
+		@Getter
+		@Setter
+		@ToString
+		public static class Data implements Serializable {
+
+			private static final long serialVersionUID = 159613227785489872L;
+
+			@XmlElement(name = "coord")
+			private List<String> artifacts;
+
+		}
+
 	}
 
 	@NoArgsConstructor
@@ -307,7 +436,8 @@ public class NexusConnector {
 	@Setter
 	@ToString
 	public static class GetStatsOutput implements Serializable {
-		private static final long serialVersionUID = 3642117423686944572L;
+
+		private static final long serialVersionUID = 6761217401866880541L;
 
 		@XmlTransient
 		private Date time;
@@ -316,13 +446,14 @@ public class NexusConnector {
 		private Data data;
 
 		@XmlAccessorType(XmlAccessType.FIELD)
+		@XmlType(namespace = "GetStatsOutput.Data")
 		@NoArgsConstructor
 		@Getter
 		@Setter
 		@ToString
 		public static class Data implements Serializable {
 
-			private static final long serialVersionUID = -5272099947960951863L;
+			private static final long serialVersionUID = -5929067539263340061L;
 
 			@XmlElement
 			private String projectId;

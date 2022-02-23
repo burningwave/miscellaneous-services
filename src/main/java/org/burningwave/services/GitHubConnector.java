@@ -62,8 +62,7 @@ public class GitHubConnector {
         headers.set("Authorization", configMap.get("authorization.token.type") + " " + configMap.get("authorization.token"));
         reposComponentsBuilder = () -> UriComponentsBuilder.newInstance()
         	.scheme("https")
-        	.host((String)configMap
-        	.get("host"))
+        	.host((String)configMap.get("host"))
         	.pathSegment("repos");
         allProjectsInfo = retrieveProjectsInfo((String)configMap.get("projects-info"));
         inMemoryCache = new ConcurrentHashMap<>();

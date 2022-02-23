@@ -13,6 +13,7 @@ import javax.xml.bind.JAXBException;
 import org.burningwave.Badge;
 import org.burningwave.SimpleCache;
 import org.springframework.core.env.Environment;
+import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -35,13 +36,16 @@ public class Controller {
     	logger = org.slf4j.LoggerFactory.getLogger(Controller.class);
     }
 
-	public Controller(
+	public Controller (
 		Environment environment,
 		SimpleCache cache,
 		Badge badge,
-		NexusConnector.Group nexusConnectorGroup,
-		GitHubConnector gitHubConnector
-	) {
+		@Nullable NexusConnector.Group nexusConnectorGroup,
+		@Nullable GitHubConnector gitHubConnector
+	) throws InitializeException {
+		if (nexusConnectorGroup == null && gitHubConnector == null) {
+			throw new InitializeException("The Nexus connector group and the GitHub connector cannot be both disabled");
+		}
 		this.environment = environment;
 		this.cache = cache;
 		this.badge = badge;
@@ -51,7 +55,21 @@ public class Controller {
 
 	@GetMapping(path = "/nexus-connector/project-info", produces = "application/json")
 	public Object getProjectInfo() {
-		return nexusConnectorGroup.getAllProjectInfos();
+		try {
+			try {
+				return nexusConnectorGroup.getAllProjectInfos();
+			} catch (NullPointerException exc){
+				if (nexusConnectorGroup == null) {
+					logger.warn("The Nexus connector group is disabled");
+					return null;
+				}
+				throw exc;
+			}
+		} catch (Throwable exc) {
+			logger.error("Exception occurred", exc);
+			return "null";
+		}
+
 	}
 
 	@GetMapping(path = "/stats/total-downloads", produces = "application/json")
@@ -75,13 +93,21 @@ public class Controller {
 		@RequestParam(value = "months", required = false) String months
 	) {
 		try {
-			return nexusConnectorGroup.getAllStats(
-				groupIds,
-				aliases,
-				artifactIds,
-				startDate != null ? new SimpleDateFormat("yyyy-MM").parse(startDate) : null,
-				months != null ? Integer.valueOf(months) : null
-			).getDownloadsForMonth();
+			try {
+				return nexusConnectorGroup.getAllStats(
+					groupIds,
+					aliases,
+					artifactIds,
+					startDate != null ? new SimpleDateFormat("yyyy-MM").parse(startDate) : null,
+					months != null ? Integer.valueOf(months) : null
+				).getDownloadsForMonth();
+			} catch (NullPointerException exc){
+				if (nexusConnectorGroup == null) {
+					logger.warn("The Nexus connector group is disabled");
+					return "null";
+				}
+				throw exc;
+			}
 		} catch (Throwable exc) {
 			logger.error("Exception occurred", exc);
 			return "null";
@@ -142,8 +168,24 @@ public class Controller {
 		String authorizationToken = authorizationTokenAsHeader != null ? authorizationTokenAsHeader : authorizationTokenAsQueryParam;
 		String message;
 		if ((environment.getProperty("application.authorization.token.type") + " " + environment.getProperty("application.authorization.token")).equals(authorizationToken)) {
-			nexusConnectorGroup.clearCache();
-			gitHubConnector.clearCache();
+			try {
+				nexusConnectorGroup.clearCache();
+			} catch (NullPointerException exc) {
+				if (nexusConnectorGroup == null) {
+					logger.warn("The Nexus connector group is disabled");
+				} else {
+					throw exc;
+				}
+			}
+			try {
+				gitHubConnector.clearCache();
+			} catch (NullPointerException exc) {
+				if (gitHubConnector == null) {
+					logger.warn("The GitHub connector is disabled");
+				} else {
+					throw exc;
+				}
+			}
 			cache.clear();
 			message = "Cache successfully cleaned";
 		} else {
@@ -154,13 +196,21 @@ public class Controller {
 
 	private Long getTotalDownloadsOrNull(Set<String> groupIds, Set<String> aliases, Set<String> artifactIds, String startDate, String months) {
 		try {
-			return nexusConnectorGroup.getAllStats(
-				groupIds,
-				aliases,
-				artifactIds,
-				startDate != null ? new SimpleDateFormat("yyyy-MM").parse(startDate) : null,
-				months != null ? Integer.valueOf(months) : null
-			).getTotalDownloads();
+			try {
+				return nexusConnectorGroup.getAllStats(
+					groupIds,
+					aliases,
+					artifactIds,
+					startDate != null ? new SimpleDateFormat("yyyy-MM").parse(startDate) : null,
+					months != null ? Integer.valueOf(months) : null
+				).getTotalDownloads();
+			} catch (NullPointerException exc){
+				if (nexusConnectorGroup == null) {
+					logger.warn("The Nexus connector group is disabled");
+					return null;
+				}
+				throw exc;
+			}
 		} catch (IllegalArgumentException exc) {
 			logger.error(exc.getMessage());
 			return null;
@@ -172,11 +222,32 @@ public class Controller {
 
 	private Integer getStarCountOrNull(String username, String repositoryName) {
 		try {
-			return gitHubConnector.getAllStarCount(username, repositoryName);
+			try {
+				return gitHubConnector.getAllStarCount(username, repositoryName);
+			} catch (NullPointerException exc){
+				if (gitHubConnector == null) {
+					logger.warn("The GitHub connector is disabled");
+					return null;
+				}
+				throw exc;
+			}
 		} catch (Throwable exc) {
 			logger.error("Exception occurred", exc);
 			return null;
 		}
 	}
 
+
+	public class InitializeException extends Exception {
+
+		private static final long serialVersionUID = -8992396547359618654L;
+
+		public InitializeException(String message, Throwable cause) {
+			super(message, cause);
+		}
+
+		public InitializeException(String message) {
+			super(message);
+		}
+	}
 }
