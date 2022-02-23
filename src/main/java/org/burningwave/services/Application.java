@@ -46,7 +46,6 @@ import org.burningwave.FSBasedCache;
 import org.burningwave.SimpleCache;
 import org.burningwave.Utility;
 import org.burningwave.core.assembler.StaticComponentContainer;
-import org.burningwave.services.Application.DBConfig;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -59,7 +58,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -80,7 +78,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 	org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
 	org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
 })
-@Import({DBConfig.class})
 @EnableScheduling
 @EnableAsync
 public class Application {
@@ -123,7 +120,7 @@ public class Application {
 	}
 
 	@Bean("cache")
-	@ConditionalOnProperty(prefix = "cache", name = "type", havingValue = "File system based")
+	@ConditionalOnExpression(value = "'${cache.type}'.trim().equalsIgnoreCase('File system based')")
 	public SimpleCache cache(
 		@Qualifier("cacheConfig") Map<String, String> configMap
 	) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
@@ -271,13 +268,13 @@ public class Application {
 		}
 	}
 
+
 	@Import({
 		org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
 		org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
 	})
 	@EnableJpaRepositories(basePackages = {"org.burningwave"}, considerNestedRepositories = true)
 	@EntityScan(basePackages = {"org.burningwave"})
-	@Configuration
 	@Conditional(DBConfig.Condition.class)
 	public static class DBConfig {
 
@@ -294,7 +291,7 @@ public class Application {
 
 			@Override
 			public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
-		        return "Database based".equals(context.getEnvironment().getProperty("cache.type"));
+		        return "Database based".equalsIgnoreCase(context.getEnvironment().getProperty("cache.type").trim());
 			}
 
 		}
