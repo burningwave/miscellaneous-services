@@ -24,6 +24,8 @@ import javax.xml.bind.JAXBException;
 
 import org.burningwave.SimpleCache;
 import org.burningwave.Throwables;
+import org.burningwave.Utility;
+import org.burningwave.services.NexusConnector.GetStatsOutput;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -33,20 +35,28 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-public class GitHubConnector {
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+public class GitHubConnector implements SimpleCache.Listener {
 
 	private final static org.slf4j.Logger logger;
 
 	private RestTemplate restTemplate;
-	private HttpEntity<String> entity;
-	private Supplier<UriComponentsBuilder> getStarCountUriComponentsBuilder;
-	private Map<String, Collection<String>> allProjectsInfo;
+	private HttpHeaders headers;
+	private Supplier<UriComponentsBuilder> reposComponentsBuilder;
+	private Map<String, Collection<Project>> allProjectsInfo;
 	private Map<String, GetStarCountOutput> inMemoryCache;
 	private long timeToLiveForInMemoryCache;
 
 	@Autowired
     private SimpleCache cache;
 
+	@Autowired
+    private Utility utility;
 
     static {
     	logger = org.slf4j.LoggerFactory.getLogger(GitHubConnector.class);
@@ -54,10 +64,9 @@ public class GitHubConnector {
 
     public GitHubConnector(Map<String, Object> configMap) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
     	restTemplate = new RestTemplate();
-    	HttpHeaders headers = new HttpHeaders();
+    	headers = new HttpHeaders();
         headers.set("Authorization", configMap.get("authorization.token.type") + " " + configMap.get("authorization.token"));
-        entity = new HttpEntity<String>(headers);
-        getStarCountUriComponentsBuilder = () -> UriComponentsBuilder.newInstance()
+        reposComponentsBuilder = () -> UriComponentsBuilder.newInstance()
         	.scheme("https")
         	.host((String)configMap
         	.get("host"))
@@ -69,14 +78,14 @@ public class GitHubConnector {
 
 
 	@SuppressWarnings("rawtypes")
-	private GetStarCountOutput callRemoteService(Input input) {
+	private GetStarCountOutput callRetrieveInfoRemote(Input input) {
 		UriComponents uriComponents =
-			getStarCountUriComponentsBuilder.get().pathSegment(input.getUsername()).pathSegment(input.getRepositoryName())
+			reposComponentsBuilder.get().pathSegment(input.getUsername()).pathSegment(input.getRepositoyName())
 			.build();
 		ResponseEntity<Map> response = restTemplate.exchange(
 			uriComponents.toString(),
 			HttpMethod.GET,
-			entity,
+			new HttpEntity<String>(headers),
 			Map.class
 		);
 		Map remoteServiceOutput = response.getBody();
@@ -90,14 +99,24 @@ public class GitHubConnector {
 		logger.info("In memory cache cleaning done");
 	}
 
-    private Map<String, Collection<String>> retrieveProjectsInfo(String projectInfosAsString) {
-    	Map<String, Collection<String>> projectsInfo = new ConcurrentHashMap<>();
+    private Map<String, Collection<Project>> retrieveProjectsInfo(String projectInfosAsString) {
+    	Map<String, Collection<Project>> projectsInfo = new ConcurrentHashMap<>();
     	for (String projectInfoAsString : projectInfosAsString.split(";")) {
-    		Collection<String> repoNames = new CopyOnWriteArrayList<>();
+    		Collection<Project> projects = new CopyOnWriteArrayList<>();
     		String[] infos = projectInfoAsString.split("/");
-    		projectsInfo.put(infos[0], repoNames);
+    		String[] keyFragments = infos[0].split(":");
+    		projectsInfo.put(keyFragments[0], projects);
     		for (int i = 1; i < infos.length; i++) {
-    			repoNames.add(infos[i]);
+    			String[] valuesGroupOne = infos[i].split("\\\\");
+    			String[] valuesGroupTwo = valuesGroupOne[0].split(":");
+    			projects.add(
+    				new Project(
+    					valuesGroupTwo[0],
+	    				valuesGroupOne.length > 1 ? valuesGroupOne[1] : null,
+	    				keyFragments.length > 1 ? keyFragments[1] : null,
+	    				valuesGroupTwo.length > 1 ? valuesGroupTwo[1] : null
+	    			)
+    			);
     		}
     	}
 		return projectsInfo;
@@ -109,7 +128,6 @@ public class GitHubConnector {
 		if (output == null) {
 			output = cache.load(key);
 			if (output != null) {
-				logger.info("Object with id '{}' loaded from physical cache", key);
 				inMemoryCache.put(key, output);
 			}
 		}
@@ -122,7 +140,7 @@ public class GitHubConnector {
 		return Synchronizer.execute(Objects.getId(this) + key, () -> {
 			GetStarCountOutput newOutput;
 			try {
-				newOutput = callRemoteService(input);
+				newOutput = callRetrieveInfoRemote(input);
 			} catch (Throwable exc) {
 				if (oldOutput != null) {
 					return oldOutput;
@@ -146,7 +164,7 @@ public class GitHubConnector {
     	return
 			input.getClass().getName() + ";" +
 			input.getUsername() + ";" +
-			input.getRepositoryName();
+			input.getRepositoyName();
 	}
 
 
@@ -170,30 +188,30 @@ public class GitHubConnector {
 		if (username != null && repositoryName != null) {
 			Input input = new Input();
 			input.setUsername(username);
-			input.setRepositoryName(repositoryName);
+			input.setRepositoyName(repositoryName);
 			outputSuppliers.add(
 				CompletableFuture.supplyAsync(() ->
 					function.apply(input)
 				)
 			);
 		} else if (username == null && repositoryName != null) {
-			for (Entry<String, Collection<String>> usernameAndRepositories : allProjectsInfo.entrySet()) {
-				if (usernameAndRepositories.getValue().contains(repositoryName)) {
+			for (Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
+				if (usernameAndRepositories.getValue().stream().filter(project -> repositoryName.equals(project.getRepositoryName())).findFirst().isPresent()) {
 					Input input = new Input();
 					input.setUsername(usernameAndRepositories.getKey());
-					input.setRepositoryName(repositoryName);
+					input.setRepositoyName(repositoryName);
 					outputSuppliers.add(
 						CompletableFuture.supplyAsync(() ->
-						function.apply(input)
+							function.apply(input)
 						)
 					);
 				}
 			}
 		} else if (username != null && repositoryName == null) {
-			for (String repoName : allProjectsInfo.get(username)) {
+			for (Project project : allProjectsInfo.get(username)) {
 				Input input = new Input();
 				input.setUsername(username);
-				input.setRepositoryName(repoName);
+				input.setRepositoyName(project.getRepositoryName());
 				outputSuppliers.add(
 					CompletableFuture.supplyAsync(() ->
 						function.apply(input)
@@ -201,11 +219,11 @@ public class GitHubConnector {
 				);
 			}
 		} else {
-			for (Entry<String, Collection<String>> usernameAndRepositories : allProjectsInfo.entrySet()) {
-				for (String repoName : usernameAndRepositories.getValue()) {
+			for (Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
+				for (Project project : usernameAndRepositories.getValue()) {
 					Input input = new Input();
 					input.setUsername(usernameAndRepositories.getKey());
-					input.setRepositoryName(repoName);
+					input.setRepositoyName(project.getRepositoryName());
 					outputSuppliers.add(
 						CompletableFuture.supplyAsync(() ->
 							function.apply(input)
@@ -217,26 +235,18 @@ public class GitHubConnector {
 		return outputSuppliers;
 	}
 
+	@NoArgsConstructor
+	@Getter
+	@Setter
 	public static class Input {
 		private String username;
 		private String repositoyName;
 
-		public String getUsername() {
-			return username;
-		}
-		public void setUsername(String user) {
-			this.username = user;
-		}
-		public String getRepositoryName() {
-			return repositoyName;
-		}
-		public void setRepositoryName(String repoName) {
-			this.repositoyName = repoName;
-		}
-
-
 	}
 
+	@NoArgsConstructor
+	@Getter
+	@Setter
 	public static class GetStarCountOutput implements Serializable {
 
 		private static final long serialVersionUID = 5045091698760296866L;
@@ -244,21 +254,58 @@ public class GitHubConnector {
 		private Date time;
 		private Integer count;
 
-
-		public Date getTime() {
-			return time;
-		}
-		public void setTime(Date time) {
-			this.time = time;
-		}
-		public Integer getCount() {
-			return count;
-		}
-		public void setCount(Integer count) {
-			this.count = count;
-		}
-
-
 	}
 
+	@Override
+	public <T extends Serializable> void processChangeNotification(String key, T newValue, T oldValue) {
+		if (newValue instanceof GetStatsOutput) {
+			synchronized (this) {
+				Calendar lastExecutionDate = cache.load("remoteCachesUpdate.lastExecution");
+				Calendar newDate = utility.newCalendarAtTheStartOfTheMonth();
+				if (lastExecutionDate == null ||
+					lastExecutionDate.get(Calendar.YEAR) != newDate.get(Calendar.YEAR) ||
+					lastExecutionDate.get(Calendar.MONTH) != newDate.get(Calendar.MONTH)
+				) {
+					updateRemoteCaches();
+					cache.store("remoteCachesUpdate.lastExecution", newDate);
+				}
+			}
+		}
+	}
+
+
+	private void updateRemoteCaches() {
+		for (Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
+			for (Project project : usernameAndRepositories.getValue()) {
+				UriComponents uriComponents = reposComponentsBuilder.get()
+					.pathSegment(
+						usernameAndRepositories.getKey(),
+						project.getRepositoryName(),
+						"actions", "runs",
+						project.getUpdateCacheWorkflowId(),
+						"rerun"
+					).build();
+				restTemplate.exchange(
+					uriComponents.toString(),
+					HttpMethod.POST,
+					new HttpEntity<String>(headers),
+					Map.class
+				);
+				logger.info("Remote cache {}/{} successfully updated", usernameAndRepositories.getKey(), project.getRepositoryName());
+			}
+		}
+	}
+
+	@Getter
+	@Setter
+	@NoArgsConstructor
+	@AllArgsConstructor
+	@ToString
+	private static class Project {
+
+		private String repositoryName;
+		private String updateCacheWorkflowId;
+		private String groupId;
+		private String artifactId;
+	}
 }

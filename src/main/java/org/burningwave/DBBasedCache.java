@@ -14,7 +14,12 @@ import javax.persistence.Table;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public class DBBasedCache implements SimpleCache {
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+public class DBBasedCache extends SimpleCache.Abst {
 	private final static org.slf4j.Logger logger;
 
 	@Autowired
@@ -42,6 +47,7 @@ public class DBBasedCache implements SimpleCache {
 			Throwables.rethrow(exc);
 		}
 		repository.save(cacheItem);
+		logger.info("Object with id '{}' stored in the physical cache", key);
 	}
 
 	@Override
@@ -49,7 +55,9 @@ public class DBBasedCache implements SimpleCache {
 		Item cacheItem = repository.findByKey(key);
 		if (cacheItem != null) {
 			try {
-				return utility.deserialize(cacheItem.getValue());
+				T effectiveItem = utility.deserialize(cacheItem.getValue());
+				logger.info("Object with id '{}' loaded from physical cache", key);
+				return effectiveItem;
 			} catch (IOException | ClassNotFoundException exc) {
 				Throwables.rethrow(exc);
 			}
@@ -65,7 +73,13 @@ public class DBBasedCache implements SimpleCache {
 
 	@Entity
 	@Table(name = "CacheItem")
-	public static class Item {
+	@NoArgsConstructor
+	@Getter
+	@Setter
+	@ToString
+	public static class Item implements Serializable {
+
+		private static final long serialVersionUID = 3154577811258150600L;
 
 		@Id
 		@GeneratedValue(strategy = GenerationType.AUTO)
@@ -76,31 +90,6 @@ public class DBBasedCache implements SimpleCache {
 
 		@Column(name = "value")
 		private byte[] value;
-
-
-		public long getId() {
-			return id;
-		}
-
-		public void setId(long id) {
-			this.id = id;
-		}
-
-		public String getKey() {
-			return key;
-		}
-
-		public void setKey(String key) {
-			this.key = key;
-		}
-
-		public byte[] getValue() {
-			return value;
-		}
-
-		public void setValue(byte[] value) {
-			this.value = value;
-		}
 
 		@org.springframework.stereotype.Repository
 		public static interface Repository extends JpaRepository<Item, String>  {

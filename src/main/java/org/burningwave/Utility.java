@@ -8,6 +8,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Base64;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 
 public class Utility {
 
@@ -56,4 +59,19 @@ public class Utility {
 		return true;
 	}
 
+
+	public Calendar newCalendarAtTheStartOfTheMonth() {
+		Calendar calendar = new GregorianCalendar();
+		calendar.setTime(new Date());
+		return setCalendarAtTheStartOfTheMonth(calendar);
+	}
+
+	public Calendar setCalendarAtTheStartOfTheMonth(Calendar calendar) {
+		calendar.set(Calendar.DATE, 0);
+		calendar.set(Calendar.HOUR_OF_DAY, 0);
+		calendar.set(Calendar.MINUTE, 0);
+		calendar.set(Calendar.SECOND, 0);
+		calendar.set(Calendar.MILLISECOND, 0);
+		return calendar;
+	}
 }

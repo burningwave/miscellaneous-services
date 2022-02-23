@@ -1,20 +1,35 @@
-nexus-connector.host: ${NEXUS_CONNECTOR_HOST:oss.sonatype.org}
-nexus-connector.authorization.token: ${NEXUS_CONNECTOR_AUTHORIZATION_TOKEN}
-nexus-connector.authorization.token.type: ${NEXUS_CONNECTOR_AUTHORIZATION_TOKEN_TYPE:Basic}
-nexus-connector.projects-info: ${NEXUS_CONNECTOR_PROJECTS_INFO:2018-12;1dff4d3ebff6ae/org.burningwave/core/jvm-driver/graph/tools;863727bf94ba3c/com.github.burningwave/core:bw-core/graph:bw-graph;}
-nexus-connector.cache.ttl: ${NEXUS_CONNECTOR_CACHE_TTL:2592000000}
-nexus-connector.cache.day-of-the-month-from-which-to-leave: ${NEXUS_CONNECTOR_CACHE_DAY_OF_THE_MONTH_FROM_WHICH_TO_LEAVE:6}
+nexus-connector.projects-info.start-date:  ${NEXUS_CONNECTOR_ALL_PROJECTS_INFO_START_DATE:2018-12}
+nexus-connector:
+   - host: ${NEXUS_CONNECTOR_0_HOST:oss.sonatype.org}
+     authorization.token: ${NEXUS_CONNECTOR_0_AUTHORIZATION_TOKEN}
+     authorization.token.type: ${NEXUS_CONNECTOR_0_AUTHORIZATION_TOKEN_TYPE:Basic}
+     projects-info: ${NEXUS_CONNECTOR_0_PROJECTS_INFO:1dff4d3ebff6ae/org.burningwave/core/jvm-driver/graph/tools;863727bf94ba3c/com.github.burningwave/core:bw-core/graph:bw-graph;}
+     cache.ttl: ${NEXUS_CONNECTOR_0_CACHE_TTL:2592000000}
+     cache.day-of-the-month-from-which-to-leave: ${NEXUS_CONNECTOR_0_CACHE_DAY_OF_THE_MONTH_FROM_WHICH_TO_LEAVE:6}
+   - host: ${NEXUS_CONNECTOR_1_HOST:s01.oss.sonatype.org}
+     authorization.token: ${NEXUS_CONNECTOR_1_AUTHORIZATION_TOKEN}
+     authorization.token.type: ${NEXUS_CONNECTOR_1_AUTHORIZATION_TOKEN_TYPE:Basic}
+     projects-info: ${NEXUS_CONNECTOR_1_PROJECTS_INFO:455e122e7b9560/io.github.toolfactory/jvm-driver/narcissus}
+     cache.ttl: ${NEXUS_CONNECTOR_1_CACHE_TTL:2592000000}
+     cache.day-of-the-month-from-which-to-leave: ${NEXUS_CONNECTOR_1_CACHE_DAY_OF_THE_MONTH_FROM_WHICH_TO_LEAVE:6}
 
 github-connector.host: ${GITHUB_CONNECTOR_HOST:api.github.com}
 github-connector.authorization.token: ${GITHUB_CONNECTOR_AUTHORIZATION_TOKEN}
 github-connector.authorization.token.type: ${GITHUB_CONNECTOR_AUTHORIZATION_TOKEN_TYPE:Bearer}
-github-connector.projects-info: ${GITHUB_CONNECTOR_PROJECTS_INFO:burningwave/core/jvm-driver/graph/tools}
+github-connector.projects-info: ${GITHUB_CONNECTOR_PROJECTS_INFO:burningwave:org.burningwave/core:core\${github-connector.projects-info.core.update-remote-cache-workflow-id}/jvm-driver:jvm-driver\${github-connector.projects-info.jvm-driver.update-remote-cache-workflow-id}/graph:graph\${github-connector.projects-info.graph.update-remote-cache-workflow-id}/tools:tools\${github-connector.projects-info.tools.update-remote-cache-workflow-id}/burningwave.github.io\${github-connector.projects-info.burningwave-github-io.update-remote-cache-workflow-id}}
+github-connector.projects-info.core.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_CORE_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1750708128}
+github-connector.projects-info.jvm-driver.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_JVM_DRIVER_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1750732966}
+github-connector.projects-info.graph.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_GRAPH_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1750722174}
+github-connector.projects-info.tools.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_TOOLS_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1750742416}
+github-connector.projects-info.burningwave-github-io.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_BURNINGWAVE_GITHUB_IO_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1750749736}
+github-connector.cache.listener.enabled: ${GITHUB_CONNECTOR_CACHE_LISTENER_ENABLED:false}
 github-connector.cache.ttl: ${GITHUB_CONNECTOR_CACHE_TTL:86400000}
 
 application-self-connector.host: ${APPLICATION_SELF_CONNECTOR_HOST:burningwave.herokuapp.com}
 
 cache.type: ${CACHE_TYPE:org.burningwave.DBBasedCache}
-cache.base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
+#cache.type: ${CACHE_TYPE:org.burningwave.FSBasedCache}
+#cache.base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
 
 spring.datasource.url: ${JDBC_DATABASE_URL:jdbc:postgresql://localhost:5432/postgres}
 spring.datasource.username: ${JDBC_DATABASE_USERNAME:postgres}
@@ -25,4 +40,7 @@ spring.jpa.properties.hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
 spring.jpa.hibernate.ddl-auto: update
 
 scheduled-operations.ping.cron: ${SCHEDULED_OPERATIONS_PING_CRON:-}
-scheduled-operations.ping.zone: ${SCHEDULED_OPERATIONS_PING_ZONE:Europe/Rome}
+scheduled-operations.ping.zone: ${SCHEDULED_OPERATIONS_PING_ZONE:UTC}
+
+burningwave.core.static-component-container.managed-logger.repository: 'org.burningwave.core.SLF4JManagedLoggerRepository'
+burningwave.core.static-component-container.modules.export-all-to-all: false

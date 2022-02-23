@@ -10,9 +10,9 @@
 	</parent>
 	<groupId>org.burningwave</groupId>
 	<artifactId>miscellaneous-services</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
-	<name>services</name>
-	<description>Demo project for Spring Boot</description>
+	<version>1.0.0</version>
+	<name>Miscellaneous services</name>
+	<description>Miscellaneous services</description>
 	<properties>
 		<java.version>1.8</java.version>
 	</properties>
@@ -35,16 +35,29 @@
 		</dependency>
 		
 		<dependency>
-			<groupId>org.burningwave</groupId>
-			<artifactId>core</artifactId>
-			<version>12.41.2</version>
+		    <groupId>org.burningwave</groupId>
+		    <artifactId>jvm-driver</artifactId>
+		    <version>6.8.3</version>
 		</dependency>
-
+		
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
+		    <groupId>org.burningwave</groupId>
+		    <artifactId>core</artifactId>
+		    <version>12.45.1</version>
+		    <exclusions>
+		        <exclusion>
+		            <groupId>io.github.toolfactory</groupId>
+		            <artifactId>narcissus</artifactId>
+		        </exclusion>
+		    </exclusions>
 		</dependency>
+				
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+		
 	</dependencies>
 
 	<build>
