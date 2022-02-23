@@ -1,0 +1,560 @@
+<link rel="shortcut icon" type="image/png" href="https://raw.githubusercontent.com/burningwave/burningwave.github.io/main/favicon.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/burningwave/burningwave.github.io/main/only-flame-logo.png">
+<meta property="twitter:title" content="Artifact downloads" />
+<meta name="twitter:card" content="summary" />
+<script type='text/javascript' src='./../js/jquery-3.6.0.js'></script>
+<script type='text/javascript' src="./../js/Chart.min.js"></script>
+<script type='text/javascript' src="./../js/moment.min.js"></script>
+<style>
+	@font-face {
+	    font-family: 'Aldo Pro Book';
+	    src: local('Aldo Pro Book'), local('Aldo-Pro-Book'),
+	        url('https://burningwave.github.io/assets/fonts/AldoPro-Bold.woff2') format('woff2'),
+	        url('https://burningwave.github.io/assets/fonts/AldoPro-Bold.woff') format('woff'),
+	        url('https://burningwave.github.io/assets/fonts/AldoPro-Bold.ttf') format('truetype');
+	    font-weight: normal;
+	    font-style: normal;
+	}
+    #loader { 
+        border: 12px solid #f7bc12; 
+        border-radius: 50%; 
+        border-top: 12px solid #e54d1d; 
+        width: 35px; 
+        height: 35px; 
+        animation: spin 1s linear infinite; 
+    } 
+        
+    @keyframes spin { 
+        100% { 
+            transform: rotate(360deg); 
+        } 
+    } 
+        
+    .center { 
+        position: absolute; 
+        top: 0; 
+        bottom: 0; 
+        left: 0; 
+        right: 0;
+        margin: auto; 
+    }
+    #overlay {
+        display:table;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0,0,0,0.8);
+        z-index: 2;
+        cursor: pointer;
+    }
+
+    #overlay span{
+        color: #f7bc12;
+        font-size: 18px;
+        display:table-cell;
+        vertical-align:middle;
+        text-align:center;
+    }
+	a:link {
+		color: #e54d1d;
+		text-decoration: none;
+	}
+	a:visited {
+		color: #e54d1d;
+	}
+	a:link:hover {
+		text-decoration: underline;
+	}
+</style>
+<div style="margin: 30px; font-family: 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif';">
+	<div id="overlay">
+		<div id="loader" class="center"></div>
+		<span><br/><br/><br/><br/><br/><b>LOADING</b></span>
+	</div> 
+
+	<div id="chartContainer">
+		<div style="max-width: 100%; margin: auto;">
+			<h1 style="color: #e54d1d; font-weight: 500;">Artifact downloads from Maven Central</h1>
+			<div>
+				<p style="color: grey;"><strong>Download counts are automatically updated after the sixth day of each month by connecting directly to Maven Central Statistics</strong>.</p>
+			</div>
+			<div style="display: table;" id="downloadsSummary">
+
+			</div>
+		</div>
+		<div id="overallTrendChartDiv" style="max-width: 100%; margin: auto;">
+			<canvas id="overallTrendChart"></canvas>
+		</div>
+		<div id="separatorDivOne" style="height: 50px;">
+		</div>
+		<div id="monthlyTrendChartDiv" style="max-width: 100%; margin: auto;">
+			<canvas id="monthlyTrendChart"></canvas>
+		</div>
+	</div>
+	<div style="margin-top: 30px; text-align: right;">
+		Powered by
+		<a href="#" onclick="goToUrl('https://github.com/burningwave/miscellaneous-services');return false;">
+			<span style="font-family: 'Aldo Pro Book'; font-size: 23px; font-style: italic; font-weight: bold;">Burningwave</span>
+		</a>
+	</div>
+</div>
+<script>
+	var defaultDateAsString = '2018-12-01';
+	var allProjectInfos = getallProjectInfos();
+	var totalRowTextColor = 'rgb(0, 0, 0)';
+    try {
+		var groupIdsQueryParam = toArray(getQueryParam("groupId"));
+		var artifactIdsQueryParam = toArray(getQueryParam("artifactId"));
+		var aliasQueryParam = toArray(getQueryParam("alias"));
+		
+		var artifactIds = selectProjectInfos(groupIdsQueryParam, artifactIdsQueryParam, aliasQueryParam);
+		buildSummary(artifactIds);
+		var startDateQueryParam = getQueryParam("startDate");
+		var monthsQueryParam = getQueryParam("months");
+		
+        var startDate = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
+		var startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
+        var endDate = (monthsQueryParam != null ? startDateForComputation.add(monthsQueryParam,'month') : moment()).startOf('month').add(-1,'day');
+        var timeValues = [];
+		startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
+		var months;
+        while (endDate > startDateForComputation || startDateForComputation.format('M') === endDate.format('M')) {
+            timeValues.push(startDateForComputation.format('MMM YYYY'));
+            startDateForComputation.add(1,'month');
+			months = months != null ? months + 1 : 1;
+        }
+	
+        var monthlyTrendChartDatasets = [];
+        var overallTrendChartDatasets = [];
+        var overallTrendChart = null;
+        var monthlyTrendChart = null;
+        var showOverallTrendChart = getQueryParam("show-overall-trend-chart");
+        if (showOverallTrendChart == null || showOverallTrendChart.toUpperCase() != "false".toUpperCase()) {
+            overallTrendChart = createChart('overallTrendChart', 'Overall trend', timeValues, overallTrendChartDatasets);
+        } else {
+            document.getElementById("overallTrendChartDiv").style.display = "none";
+        }
+        var showMonthlyTrendChart = getQueryParam("show-monthly-trend-chart");
+        if (showMonthlyTrendChart == null || showMonthlyTrendChart.toUpperCase() != "false".toUpperCase()) {
+            monthlyTrendChart = createChart('monthlyTrendChart', 'Monthly trend', timeValues, monthlyTrendChartDatasets);
+        } else {
+            document.getElementById("monthlyTrendChartDiv").style.display = "none";
+        }
+        if (overallTrendChart == null || monthlyTrendChart == null) {
+            document.getElementById("separatorDivOne").style.display = "none";
+        }
+
+        var loadedArtifactIds = [];
+        var attemptedLoadingArtifactIds = [];
+        for (i = 0; i < artifactIds.length; i++) {
+            launchAsyncCallForOne(artifactIds[i], 3);
+        }		
+    } catch (error) {
+        //location.reload();
+    }
+
+	
+	function selectProjectInfos(groupIdValues, artifactIdValues, aliasValues) {
+		var artifactIds = [];
+		for (i = 0; i < allProjectInfos.length; i++) {
+			if (
+				(groupIdValues == null || groupIdValues.includes(allProjectInfos[i][0].split(":")[0])) &&
+				((artifactIdValues == null && aliasValues == null) || 
+				(artifactIdValues != null && artifactIdValues.includes(allProjectInfos[i][0])) || 
+				(aliasValues != null && aliasValues.includes(allProjectInfos[i][1])))
+			) {
+				artifactIds.push(allProjectInfos[i][0]);
+			}		
+		}
+		return artifactIds;
+		
+	}
+	
+	
+	function getallProjectInfos() {
+		var allallProjectInfos = getAllallProjectInfos().responseJSON;
+		for (i = 0; i < allallProjectInfos.length; i++) {
+            allallProjectInfos[i][2] = hexToRgb(allallProjectInfos[i][2]);
+        }
+		return allallProjectInfos;
+	}
+	
+	
+	function hexToRgb(hex) {
+		hex = '#' + hex;
+		// Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+		var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+		hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+			return r + r + g + g + b + b;
+		});	
+		var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+		var rgbString = 'rgb(' + parseInt(result[1], 16) + ', ' + parseInt(result[2], 16) + ', ' + parseInt(result[3], 16) + ')';
+		return rgbString;
+	}
+	
+	
+	function toArray(variable) {
+		if (variable == null) {
+			return null;
+		} else if (Array.isArray(variable)) {
+			return variable;
+		} else {
+			return [variable];
+		}
+	}
+	
+	
+	function getQueryParam(key, target){
+		var values = [];
+		if (!target) target = location.href;
+
+		key = key.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+
+		var pattern = key + '=([^&#]+)';
+		var o_reg = new RegExp(pattern,'ig');
+		while (true){
+			var matches = o_reg.exec(target);
+			if (matches && matches[1]){
+				values.push(matches[1]);
+			} else {
+				break;
+			}
+		}
+
+		if (!values.length){
+			return null;   
+		} else {
+			return values.length == 1 ? values[0] : values;
+		}
+	}
+	
+	
+	function buildSummary(artifactIds) {
+		for (j = 0; j < artifactIds.length; j++) {
+			var summaryItem = buildSummaryItem(artifactIds[j]);
+			jQuery("#downloadsSummary").append(summaryItem);
+		}
+		jQuery("#downloadsSummary").append(buildSummaryItem(null, 'rgb(0, 0, 0)'));
+		jQuery("#downloadsSummary").append(buildSummaryItem('Total', totalRowTextColor));
+	}
+	
+	
+	function buildSummaryItem(artifactId, color) {
+		var item = 
+			'<div id="' + artifactId + 'DownloadsRow" style="display: table-row; font-size: 14px;">' + 
+			'	<div style="display: table-cell;color: ' + (color != null ? color : getRandomColor(artifactId)) + ';">' + 
+			'   	<b>' + (artifactId != null ? artifactId : '') + '</b>' + (artifactId != null ? ':' : '') + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+			'	</div>' +
+			'	<div id="' + artifactId + 'Downloads" style="display: table-cell; text-align: right; color: grey;">' +
+			'	</div>' +
+			'</div>';
+		return item;
+	}
+	
+	
+	function overlayOff() {
+		document.getElementById("overlay").style.display = "none";
+		document.documentElement.style.overflow = 'scroll';
+		document.body.scroll = "yes";
+	}
+	
+	
+	function overlayOn() {
+		document.getElementById("overlay").style.display = "";
+		document.documentElement.style.overflow = 'hidden';
+		document.body.scroll = "no";
+	}
+	
+
+	function launchAsyncCallForOne(artifactId, attempt) {
+		if (attempt > 0) {
+			jQuery.when(
+				launchAsyncCall(
+					artifactId, 
+					startDateQueryParam, 
+					months
+				)
+			).done(function ( artifactDownloads ) {
+				if (artifactDownloads != null) {
+					loadedArtifactIds.push(artifactId);
+					attemptedLoadingArtifactIds.push(artifactId);
+					buildChartData(monthlyTrendChartDatasets, overallTrendChartDatasets,
+						artifactId,
+						getLabel(artifactId), artifactDownloads, 
+						getBackgroundColor(artifactId),
+						getBorderColor(artifactId)
+					);
+					buildTotalTrendAndShowChart();
+				} else {
+					launchAsyncCallForOne(artifactId, --attempt);
+				}            
+			});
+		} else {
+			attemptedLoadingArtifactIds.push(artifactId);
+			displayError(artifactId);
+		}
+	}
+	
+
+    function buildTotalTrendAndShowChart() {
+        if (loadedArtifactIds.length == artifactIds.length && monthlyTrendChartDatasets[0] != null) {
+            var totalDownloads = [];
+            for (j = 0; j < monthlyTrendChartDatasets[0].data.length; j++) {
+                var totalForMonth = 0;
+                for (i = 0; i < monthlyTrendChartDatasets.length; i++) {
+                    totalForMonth += monthlyTrendChartDatasets[i].data[j];
+                }
+                totalDownloads.push(totalForMonth);
+            }
+			for (j = 0; j < totalDownloads.length; j++) {
+				if (totalDownloads[j] != 0) {
+					break;
+				}
+				totalDownloads[j] = null;
+			}
+
+            var overallDownloads = buildChartDataSets(monthlyTrendChartDatasets, overallTrendChartDatasets, 'Total', totalDownloads,
+                totalRowTextColor, totalRowTextColor
+            );
+
+            document.getElementById("TotalDownloads").appendChild(document.createTextNode(formatNumber(overallDownloads[overallDownloads.length - 1])));
+        }
+        if (attemptedLoadingArtifactIds.length == artifactIds.length) {
+            overlayOff(); 
+        }
+        updateCharts();
+    }
+	
+	
+	function formatNumber(number, minimumFractionDigits) {
+		if (minimumFractionDigits == null) {
+			minimumFractionDigits = 0;
+		}
+		return (number).toLocaleString(
+		  undefined,
+		  { minimumFractionDigits: 0 }
+		);
+	}
+	
+	
+    function getLabel(name) {
+        return name;
+    }
+
+
+    function updateCharts() {
+        if (overallTrendChart != null) {
+            overallTrendChart.update();
+        }
+        if (monthlyTrendChart != null) {
+            monthlyTrendChart.update();
+        }
+    }
+
+
+    function getBackgroundColor(artifactId) {
+		return getRandomColor(artifactId);
+    }
+
+
+    function getBorderColor(artifactId){
+		return getRandomColor(artifactId);
+    }
+	
+	function getRandomColor(artifactId) {
+		var artifactForColor;
+		for (i = 0; i < allProjectInfos.length; i++) {
+			if (allProjectInfos[i][0] == artifactId) {
+				artifactForColor = allProjectInfos[i];
+				break;				
+			}
+        }
+		if (artifactForColor == null) {
+			artifactForColor = [artifactId, null];
+			allProjectInfos.push(artifactForColor);
+		}
+		if (artifactForColor[2] == null) {
+			artifactForColor[2] = 'rgb(' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ')';
+		}
+		return artifactForColor[2];
+	}
+
+
+    function launchAsyncCall(artifactId, startDate, months) {
+        var startDateParam = startDate != null ? '&startDate=' + startDate : '';
+        var monthsParam = months != null ? '&months=' + months : '';
+        var url = './downloads-for-month?' +
+			'groupId=' + artifactId.split(':')[0] + '&' +
+			'artifactId=' + artifactId.split(':')[1] + '&' +
+			startDateParam + monthsParam;
+        return jQuery.ajax({
+            url: url,
+            data: {
+                format: 'json'
+            },
+            /*error: function (jqXhr, textStatus, errorMessage) { // error callback 
+                alert('Error: ' + errorMessage);
+            },*/
+            dataType: 'json',
+            /*success: function(data) {
+                alert(data);
+            },*/
+            type: 'GET'
+        });
+    }
+
+	function getAllallProjectInfos() {
+        var url = './../nexus-connector/project-info';
+        return jQuery.ajax({
+            url: url,
+            data: {
+                format: 'json'
+            },
+            /*error: function (jqXhr, textStatus, errorMessage) { // error callback 
+                alert('Error: ' + errorMessage);
+            },*/
+            dataType: 'json',
+            /*success: function(data) {
+                alert(data);
+            },*/
+            type: 'GET',
+			async: false
+        });
+	}
+
+
+    function buildChartData(monthlyTrendChartDatasets, overallTrendChartDatasets, artifactId, label, downloadsData, backgroundColor,  borderColor) {
+        if (downloadsData != null && downloadsData.length > 0) {
+            if (downloadsData[downloadsData.length - 1] != null) {
+                var idx = downloadsData.length - 1;
+                var popCount = 0;
+                while (downloadsData[idx] == 0) {
+                    popCount++;
+                    idx--;
+                }
+                for (let i = 0; i < popCount; i++) {
+                    downloadsData.pop();
+                } 
+                var overallDownloads = buildChartDataSets(
+                    monthlyTrendChartDatasets, overallTrendChartDatasets, label,
+                    downloadsData, backgroundColor, borderColor
+                );
+                document.getElementById(artifactId + "Downloads").appendChild(
+                    document.createTextNode(formatNumber(overallDownloads[overallDownloads.length - 1]))
+                );
+            } else {
+                document.getElementById(artifactId + "DownloadsRow").style.display = "none";             
+            }
+        }
+    }
+
+
+    function buildChartDataSets(monthlyTrendChartDatasets, overallTrendChartDatasets, label, downloadsData, backgroundColor,  borderColor) {
+        monthlyTrendChartDatasets.push(createDataSet(label, downloadsData, backgroundColor, borderColor));
+        var overallDownloads = [downloadsData[0]];
+        for (i = 1; i < downloadsData.length; i++) {
+            if (overallDownloads[i - 1] != null) {
+                overallDownloads[i] = overallDownloads[i - 1] + downloadsData[i];
+            } else {
+                overallDownloads[i] = downloadsData[i];
+            }
+        }
+        overallTrendChartDatasets.push(createDataSet(label, overallDownloads, backgroundColor, borderColor));
+        return overallDownloads;
+    }
+
+
+    function createChart(id, name, labels, dataSets) {
+        var ctx = document.getElementById(id);
+        ctx.height = 400;
+        return new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: dataSets
+            },
+            options: createOptions(name)
+        });
+    }
+
+
+    function createDataSet(label, data, backgroundColor, borderColor) {
+        return {
+            label: label,
+            fill: false,
+            data: data,
+            borderWidth: 3,
+            pointRadius: 2,
+            pointHoverRadius: 4,
+            lineTension: 0.4,
+            backgroundColor: backgroundColor,
+            borderColor: borderColor		
+        };
+    }
+
+
+    function createOptions(title) {
+        return {
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true
+                    },
+                    gridLines: {
+                        drawOnChartArea: true
+                    }
+                }],
+                xAxes: [{
+                    gridLines: {
+                        drawOnChartArea: false
+                    }
+                }]
+            },
+            title: {
+                display: true,
+                fontSize: 28,
+                text: title
+            },
+            tooltips: {
+                mode: 'index',
+                intersect: false,
+            },
+            animation: {
+                duration: 0
+            },
+            maintainAspectRatio: false
+        };
+    }
+
+    function displayError(id) {
+        var errorMessage = "Could not retrieve download count from Maven Central: try again later or tomorrow";
+        var node = document.getElementById(id + "Downloads");
+        while (node.firstChild) {
+            node.removeChild(node.firstChild);
+        }
+        node.appendChild(document.createTextNode(errorMessage));
+        node = document.getElementById("totalDownloads");
+        while (node.firstChild) {
+            node.removeChild(node.firstChild);
+        }
+        node.appendChild(document.createTextNode(errorMessage));
+        if (attemptedLoadingArtifactIds.length == artifactIds.length) {
+            overlayOff(); 
+        }
+    }
+	
+	
+	function goToUrl(url) {
+		overlayOn();
+		window.location.href = url;
+		setTimeout(function () {
+	    	overlayOff();
+	    }, 7500);
+		return false;
+	}
+	
+</script>

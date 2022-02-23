@@ -1,15 +1,19 @@
+application.authorization.token: ${APPLICATION_AUTHORIZATION_TOKEN}
+application.authorization.token.type: ${APPLICATION_AUTHORIZATION_TOKEN_TYPE:Basic}
+application.self-connector.host: ${APPLICATION_SELF_CONNECTOR_HOST:burningwave.herokuapp.com}
+
 nexus-connector.projects-info.start-date:  ${NEXUS_CONNECTOR_ALL_PROJECTS_INFO_START_DATE:2018-12}
 nexus-connector:
    - host: ${NEXUS_CONNECTOR_0_HOST:oss.sonatype.org}
      authorization.token: ${NEXUS_CONNECTOR_0_AUTHORIZATION_TOKEN}
      authorization.token.type: ${NEXUS_CONNECTOR_0_AUTHORIZATION_TOKEN_TYPE:Basic}
-     projects-info: ${NEXUS_CONNECTOR_0_PROJECTS_INFO:1dff4d3ebff6ae/org.burningwave/core/jvm-driver/graph/tools;863727bf94ba3c/com.github.burningwave/core:bw-core/graph:bw-graph;}
+     projects-info: ${NEXUS_CONNECTOR_0_PROJECTS_INFO:1dff4d3ebff6ae/org.burningwave/core\e54d1d/jvm-driver\00ff00/graph\f7bc12/tools\066da1;863727bf94ba3c/com.github.burningwave/bw-core:core\e54d1d/bw-graph:graph\f7bc12;}
      cache.ttl: ${NEXUS_CONNECTOR_0_CACHE_TTL:2592000000}
      cache.day-of-the-month-from-which-to-leave: ${NEXUS_CONNECTOR_0_CACHE_DAY_OF_THE_MONTH_FROM_WHICH_TO_LEAVE:6}
    - host: ${NEXUS_CONNECTOR_1_HOST:s01.oss.sonatype.org}
      authorization.token: ${NEXUS_CONNECTOR_1_AUTHORIZATION_TOKEN}
      authorization.token.type: ${NEXUS_CONNECTOR_1_AUTHORIZATION_TOKEN_TYPE:Basic}
-     projects-info: ${NEXUS_CONNECTOR_1_PROJECTS_INFO:455e122e7b9560/io.github.toolfactory/jvm-driver/narcissus}
+     projects-info: ${NEXUS_CONNECTOR_1_PROJECTS_INFO:455e122e7b9560/io.github.toolfactory/jvm-driver\00ff00/narcissus\402a94}
      cache.ttl: ${NEXUS_CONNECTOR_1_CACHE_TTL:2592000000}
      cache.day-of-the-month-from-which-to-leave: ${NEXUS_CONNECTOR_1_CACHE_DAY_OF_THE_MONTH_FROM_WHICH_TO_LEAVE:6}
 
@@ -24,8 +28,6 @@ github-connector.projects-info.tools.update-remote-cache-workflow-id: ${GITHUB_C
 github-connector.projects-info.burningwave-github-io.update-remote-cache-workflow-id: ${GITHUB_CONNECTOR_PROJECTS_INFO_BURNINGWAVE_GITHUB_IO_UPDATE_REMOTE_CACHE_WORKFLOW_ID:1750749736}
 github-connector.cache.listener.enabled: ${GITHUB_CONNECTOR_CACHE_LISTENER_ENABLED:false}
 github-connector.cache.ttl: ${GITHUB_CONNECTOR_CACHE_TTL:86400000}
-
-application-self-connector.host: ${APPLICATION_SELF_CONNECTOR_HOST:burningwave.herokuapp.com}
 
 cache.type: ${CACHE_TYPE:org.burningwave.DBBasedCache}
 #cache.type: ${CACHE_TYPE:org.burningwave.FSBasedCache}

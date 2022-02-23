@@ -56,7 +56,7 @@ public class DBBasedCache extends SimpleCache.Abst {
 		if (cacheItem != null) {
 			try {
 				T effectiveItem = utility.deserialize(cacheItem.getValue());
-				logger.info("Object with id '{}' loaded from physical cache", key);
+				logger.info("Object with id '{}' loaded from physical cache: {}", key, effectiveItem);
 				return effectiveItem;
 			} catch (IOException | ClassNotFoundException exc) {
 				Throwables.rethrow(exc);
