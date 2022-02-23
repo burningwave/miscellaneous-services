@@ -11,11 +11,11 @@ A simple application with which is possible:
 ## Deploy requirements
 
 The application can be deployed on [**Heroku**](https://www.heroku.com) or any other platform as a service.
-By default the application uses the file system based cache but it is recommended to use the database based cache by setting the environment property `CACHE_TYPE` to `Database based`: in this case it is required a [**PostgreSQL DBMS**](https://www.postgresql.org/) which on Heroku can be simply installed with the [**Heroku Postgres addon**](https://elements.heroku.com/addons/heroku-postgresql).
+By default the application uses the file system based cache but it is recommended to use the database based cache by setting the [**environment property**](https://devcenter.heroku.com/articles/config-vars) `CACHE_TYPE` to `Database based`: in this case it is required a [**PostgreSQL DBMS**](https://www.postgresql.org/) which on Heroku can be simply installed with the [**Heroku Postgres addon**](https://elements.heroku.com/addons/heroku-postgresql).
 
 ## Configuration
 
-On Heroku the minimal configuration requires only to set the `NEXUS_CONNECTOR_GROUP_CONFIG` [**environment property**]([https://devcenter.heroku.com/articles/config-vars]) with the [Nexus](https://oss.sonatype.org/) credentials encoded as a basic token e.g.: assuming that the Nexus username is `burningwave` and the password is `pa55w0rd`, the basic token will be the base64 encoding of the string `burningwave:pa55w0rd` and the value of the environment property `NEXUS_CONNECTOR_GROUP_CONFIG` will be:
+On Heroku the minimal configuration requires only to set the `NEXUS_CONNECTOR_GROUP_CONFIG` [**environment property**](https://devcenter.heroku.com/articles/config-vars) with the [Nexus](https://oss.sonatype.org/) credentials encoded as a basic token e.g.: assuming that the Nexus username is `burningwave` and the password is `pa55w0rd`, the basic token will be the base64 encoding of the string `burningwave:pa55w0rd` and the value of the environment property `NEXUS_CONNECTOR_GROUP_CONFIG` will be:
 
 ```json
 {
