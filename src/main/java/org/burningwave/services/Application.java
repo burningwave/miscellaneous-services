@@ -50,14 +50,9 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @EnableScheduling
 @EnableAsync
 public class Application {
-	private final static org.slf4j.Logger logger;
 	final static String SCHEME_AND_HOST_NAME_CACHE_KEY = "SchemeAndHostname";
 	private static ApplicationContext applicationContext;
 	String schemeAndHostName;
-
-	static {
-		logger = org.slf4j.LoggerFactory.getLogger(Application.class);
-	}
 
 	public static void main(String[] args) throws IOException {
 		applicationContext = SpringApplication.run(Application.class, args);
@@ -132,13 +127,7 @@ public class Application {
 	) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
 		Map<String, Object> configuration = new HashMap<>();
 		configuration.putAll(configMap);
-		String cacheListenerFlag = (String)configuration.get("cache.listener.enabled");
 		GitHubConnector gitHubConnector = new GitHubConnector(configuration);
-		if (cacheListenerFlag != null && Boolean.valueOf(cacheListenerFlag)) {
-			gitHubConnector.listenTo(cache);
-		} else {
-			logger.info("gitHubConnector.cache.listener is disabled");
-		}
 		return gitHubConnector;
 	}
 

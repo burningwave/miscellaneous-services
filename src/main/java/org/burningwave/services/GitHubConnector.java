@@ -12,7 +12,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -24,8 +23,6 @@ import javax.xml.bind.JAXBException;
 
 import org.burningwave.SimpleCache;
 import org.burningwave.Throwables;
-import org.burningwave.Utility;
-import org.burningwave.services.NexusConnector.GetStatsOutput;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -41,7 +38,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-public class GitHubConnector implements SimpleCache.Listener {
+public class GitHubConnector {
 
 	private final static org.slf4j.Logger logger;
 
@@ -54,9 +51,6 @@ public class GitHubConnector implements SimpleCache.Listener {
 
 	@Autowired
     private SimpleCache cache;
-
-	@Autowired
-    private Utility utility;
 
     static {
     	logger = org.slf4j.LoggerFactory.getLogger(GitHubConnector.class);
@@ -104,17 +98,12 @@ public class GitHubConnector implements SimpleCache.Listener {
     	for (String projectInfoAsString : projectInfosAsString.split(";")) {
     		Collection<Project> projects = new CopyOnWriteArrayList<>();
     		String[] infos = projectInfoAsString.split("/");
-    		String[] keyFragments = infos[0].split(":");
-    		projectsInfo.put(keyFragments[0], projects);
+    		String[] usernameAndGroupId = infos[0].split(":");
+    		projectsInfo.put(usernameAndGroupId[0], projects);
     		for (int i = 1; i < infos.length; i++) {
-    			String[] valuesGroupOne = infos[i].split("\\\\");
-    			String[] valuesGroupTwo = valuesGroupOne[0].split(":");
     			projects.add(
     				new Project(
-    					valuesGroupTwo[0],
-	    				valuesGroupOne.length > 1 ? valuesGroupOne[1] : null,
-	    				keyFragments.length > 1 ? keyFragments[1] : null,
-	    				valuesGroupTwo.length > 1 ? valuesGroupTwo[1] : null
+    					infos[i]
 	    			)
     			);
     		}
@@ -195,7 +184,7 @@ public class GitHubConnector implements SimpleCache.Listener {
 				)
 			);
 		} else if (username == null && repositoryName != null) {
-			for (Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
+			for (Map.Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
 				if (usernameAndRepositories.getValue().stream().filter(project -> repositoryName.equals(project.getRepositoryName())).findFirst().isPresent()) {
 					Input input = new Input();
 					input.setUsername(usernameAndRepositories.getKey());
@@ -219,7 +208,7 @@ public class GitHubConnector implements SimpleCache.Listener {
 				);
 			}
 		} else {
-			for (Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
+			for (Map.Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
 				for (Project project : usernameAndRepositories.getValue()) {
 					Input input = new Input();
 					input.setUsername(usernameAndRepositories.getKey());
@@ -256,45 +245,6 @@ public class GitHubConnector implements SimpleCache.Listener {
 
 	}
 
-	@Override
-	public <T extends Serializable> void processChangeNotification(String key, T newValue, T oldValue) {
-		if (newValue instanceof GetStatsOutput) {
-			synchronized (this) {
-				Calendar lastExecutionDate = cache.load("remoteCachesUpdate.lastExecution");
-				Calendar newDate = utility.newCalendarAtTheStartOfTheMonth();
-				if (lastExecutionDate == null ||
-					lastExecutionDate.get(Calendar.YEAR) != newDate.get(Calendar.YEAR) ||
-					lastExecutionDate.get(Calendar.MONTH) != newDate.get(Calendar.MONTH)
-				) {
-					updateRemoteCaches();
-					cache.store("remoteCachesUpdate.lastExecution", newDate);
-				}
-			}
-		}
-	}
-
-
-	private void updateRemoteCaches() {
-		for (Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
-			for (Project project : usernameAndRepositories.getValue()) {
-				UriComponents uriComponents = reposComponentsBuilder.get()
-					.pathSegment(
-						usernameAndRepositories.getKey(),
-						project.getRepositoryName(),
-						"actions", "runs",
-						project.getUpdateCacheWorkflowId(),
-						"rerun"
-					).build();
-				restTemplate.exchange(
-					uriComponents.toString(),
-					HttpMethod.POST,
-					new HttpEntity<String>(headers),
-					Map.class
-				);
-				logger.info("Remote cache {}/{} successfully updated", usernameAndRepositories.getKey(), project.getRepositoryName());
-			}
-		}
-	}
 
 	@Getter
 	@Setter
@@ -304,8 +254,6 @@ public class GitHubConnector implements SimpleCache.Listener {
 	private static class Project {
 
 		private String repositoryName;
-		private String updateCacheWorkflowId;
-		private String groupId;
-		private String artifactId;
+
 	}
 }

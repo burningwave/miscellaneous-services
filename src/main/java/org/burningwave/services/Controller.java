@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/miscellaneous-services/")
@@ -135,10 +134,12 @@ public class Controller {
 
 	@GetMapping(path = "/clear-cache")
 	public void clearCache(
-		@RequestHeader(value = "Authorization", required = false) String authorizationToken,
+		@RequestParam(value = "Authorization", required = false) String authorizationTokenAsQueryParam,
+		@RequestHeader(value = "Authorization", required = false) String authorizationTokenAsHeader,
 		HttpServletRequest request,
 		HttpServletResponse response
 	) throws IOException {
+		String authorizationToken = authorizationTokenAsHeader != null ? authorizationTokenAsHeader : authorizationTokenAsQueryParam;
 		String message;
 		if ((environment.getProperty("application.authorization.token.type") + " " + environment.getProperty("application.authorization.token")).equals(authorizationToken)) {
 			nexusConnectorGroup.clearCache();
@@ -148,12 +149,7 @@ public class Controller {
 		} else {
 			logger.error(message = "Cannot clear cache: unauthorized");
 		}
-		response.setHeader("message", message);
-		response.sendRedirect(ServletUriComponentsBuilder.fromCurrentContextPath().pathSegment(
-			"miscellaneous-services",
-			"stats",
-			"artifact-download-chart.html"
-		).build().toUriString());
+		response.sendRedirect("stats/artifact-download-chart.html?message=" + message);
 	}
 
 	private Long getTotalDownloadsOrNull(Set<String> groupIds, Set<String> aliases, Set<String> artifactIds, String startDate, String months) {
