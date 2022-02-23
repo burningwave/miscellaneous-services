@@ -14,7 +14,6 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -24,7 +23,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -49,6 +50,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -75,14 +80,14 @@ public class NexusConnector {
     	logger = org.slf4j.LoggerFactory.getLogger(NexusConnector.class);
     }
 
-    public NexusConnector(Utility utility, Map<String, Object> configMap) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
+    public NexusConnector(Utility utility, Map<String, Object> configMap) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JsonMappingException, JsonProcessingException {
     	this.utility = utility;
     	restTemplate = new RestTemplate();
     	HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", configMap.get("authorization.token.type") + " " + configMap.get("authorization.token"));
         entity = new HttpEntity<String>(headers);
         jaxbContext = JAXBContext.newInstance(GetGroupListOutput.class, GetArtifactListOutput.class, GetStatsOutput.class);
-        getStatsUriComponentsBuilder = () -> UriComponentsBuilder.newInstance().scheme("https").host((String)configMap.get("host"));
+        getStatsUriComponentsBuilder = () -> UriComponentsBuilder.newInstance().scheme((String)configMap.get("scheme")).host((String)configMap.get("host"));
         allProjects = retrieveProjectInfos(configMap);
         logger.info("Projects configuration: {}", allProjects);
         inMemoryCache = new ConcurrentHashMap<>();
@@ -100,8 +105,8 @@ public class NexusConnector {
 	public Collection<String[]> getAllProjectInfos() {
 		Collection<String[]> projectInfos = new ArrayList<>();
 		for (Project project : allProjects) {
-			for (Map.Entry<String, Artifact> artifactEntry : project.getArtifacts().entrySet()) {
-				projectInfos.add(new String[]{project.getGroupName() + ":" + artifactEntry.getKey(), artifactEntry.getValue().getAlias(), artifactEntry.getValue().getColor()});
+			for (Artifact artifact : project.getArtifacts()) {
+				projectInfos.add(new String[]{project.getName() + ":" + artifact.getName(), artifact.getAlias(), artifact.getColor(), artifact.getSite()});
 			}
 		}
 		return projectInfos;
@@ -171,7 +176,7 @@ public class NexusConnector {
 
 	private Project getProject(GetStatsInput input) {
 		for (Project project : allProjects) {
-			if (project.getGroupName().equals(input.getGroupId()) && containsArtifactIds(project, input.getArtifactId())) {
+			if (project.getName().equals(input.getGroupId()) && containsArtifactNames(project, input.getArtifactId())) {
 				return project;
 			}
 		}
@@ -185,36 +190,92 @@ public class NexusConnector {
 
 	private Project getProject(Collection<Project> projects, String projectId) {
 		for (Project project : projects) {
-			if (project.getGroupName().equals(projectId)) {
+			if (project.getName().equals(projectId)) {
 				return project;
 			}
 		}
 		return null;
 	}
 
+	public Artifact getArtifactForName(Project project, String id) {
+		return get(project, Project.Artifact::getName, Arrays.asList(id)).stream().findFirst().orElseGet(() -> null);
+	}
+
 	public Collection<Artifact> getArtifactForAliases(Project project, Collection<String> aliases) {
 		return get(project, Project.Artifact::getAlias, aliases);
 	}
 
-	private boolean containsArtifactIds(Project project, String... artifactIds) {
-		return containsArtifactIds(project, Arrays.asList(artifactIds));
+	private boolean containsArtifactNames(Project project, String... artifactIds) {
+		return containsArtifactNames(project, Arrays.asList(artifactIds));
 	}
 
-	private boolean containsArtifactIds(Project project, Collection<String> artifactIds) {
-		return !get(project, Project.Artifact::getId, artifactIds).isEmpty();
+	private boolean containsArtifactNames(Project project, Collection<String> artifactIds) {
+		return !get(project, Project.Artifact::getName, artifactIds).isEmpty();
 	}
 
 	private Collection<Project.Artifact> get(Project project, Function<Artifact, String> propertySupplier, Collection<String> values) {
-		return project.getArtifacts().values().stream().filter(artifact ->  values.contains(propertySupplier.apply(artifact))).collect(Collectors.toCollection(LinkedHashSet::new));
+		return project.getArtifacts().stream().filter(artifact ->  values.contains(propertySupplier.apply(artifact))).collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
-	/*Examples of nexus-connector.projects-info property values:
-		org.burningwave/core\e54d1d/jvm-driver\00ff00/graph\f7bc12/tools\066da1;com.github.burningwave/bw-core:core\e54d1d/bw-graph:graph\f7bc12;
-		io.github.toolfactory/jvm-driver\00ff00/narcissus\402a94
+	/* nexus-connector.projects-info property must be in JSon format
+	 * Examples of nexus-connector.projects-info property values:
+		- [{
+		    "name": "org.burningwave",
+		    "artifacts": [{
+		            "name": "jvm-driver",
+		            "color": "00ff00",
+		            "site": "https://burningwave.github.io/jvm-driver/"
+		        }, {
+		            "name": "core",
+		            "alias": "core",
+		            "color": "e54d1d",
+		            "site": "https://burningwave.github.io/core/"
+		        }, {
+		            "name": "graph",
+		            "alias": "graph",
+		            "color": "f7bc12",
+		            "site": "https://burningwave.github.io/graph/"
+		        }, {
+		            "name": "tools",
+		            "color": "066da1",
+		            "site": "https://burningwave.github.io/tools/"
+		        }
+		    ]
+		}, {
+		    "name": "com.github.burningwave",
+		    "artifacts": [{
+		            "name": "bw-core",
+		            "alias": "core",
+		            "color": "e54d1d",
+		            "site": "https://burningwave.github.io/core/"
+		        }, {
+		            "name": "bw-graph",
+		            "alias": "graph",
+		            "color": "f7bc12",
+		            "site": "https://burningwave.github.io/graph/"
+		            }
+		        ]
+		    }
+		]
+
+		- [{
+		    "name": "io.github.toolfactory",
+		    "artifacts": [{
+		            "name": "narcissus",
+		            "color": "402a94",
+		            "site": "https://toolfactory.github.io/narcissus/"
+		        }, {
+		            "name": "jvm-driver",
+		            "color": "00ff00",
+		            "site": "https://toolfactory.github.io/jvm-driver/"
+		            }
+		        ]
+		    }
+		]
 	*/
-	private Collection<Project> retrieveProjectInfos(Map<String, Object> configMap) throws ParseException, JAXBException {
+	private Collection<Project> retrieveProjectInfos(Map<String, Object> configMap) throws ParseException, JAXBException, JsonMappingException, JsonProcessingException {
 		GetGroupListOutput groupList = callGetGroupListRemote();
-		Collection<Project> projectsInfo = new ArrayList<>();
+		Collection<Project> projectsInfo = new CopyOnWriteArrayList<>();
         Calendar startDateAsCalendar = new GregorianCalendar();
         startDateAsCalendar.setTime(new SimpleDateFormat("yyyy-MM").parse((String)configMap.get("projects-info.start-date")));
 		for (GetGroupListOutput.Data.Group group : groupList.getData().getGroups()) {
@@ -222,45 +283,50 @@ public class NexusConnector {
 			projectsInfo.add(project);
 			project.setStartDate(startDateAsCalendar);
 			project.setGroupId(group.getId());
-			project.setGroupName(group.getName());
-			Map<String, Project.Artifact> articactIds = new HashMap<>();
-        	project.setArtifacts(articactIds);
+			project.setName(group.getName());
+			Collection<Project.Artifact> artifacts = new CopyOnWriteArrayList<>();
+        	project.setArtifacts(artifacts);
 			GetStatsInput input = new GetStatsInput();
 			input.setGroupId(group.getId());
 			input.setProjectId(group.getName());
 			GetArtifactListOutput artifactList = callGetArtifactListRemote(input);
 			for (String artifactName : artifactList.getData().getArtifacts()) {
 				Project.Artifact artifact = new Project.Artifact();
-				articactIds.put(artifactName, artifact);
-				artifact.setId(artifactName);
+				artifacts.add(artifact);
+				artifact.setName(artifactName);
 				artifact.setAlias(artifactName);
 				artifact.setColor(utility.randomHex());
+				artifact.setSite("https://maven-badges.herokuapp.com/maven-central/" + project.getName() + "/" + artifactName + "/");
 			}
 		}
 
 		String projectsInfoAsString = (String)configMap.get("projects-info");
 		if (projectsInfoAsString != null && !projectsInfoAsString.isEmpty()) {
-	        String[] projectsInfoAsSplittedString = projectsInfoAsString.split(";");
-	        for (int i = 0; i < projectsInfoAsSplittedString.length; i++) {
-	        	String[] projectInfoAsSplittedString = projectsInfoAsSplittedString[i].split("/");
-	        	Project project = getProject(projectsInfo, projectInfoAsSplittedString[0]);
-	        	Map<String, Project.Artifact> articacts = project.getArtifacts();
-	        	for (int j = 1; j < projectInfoAsSplittedString.length; j++) {
-	        		String[] projectAndColorAsSplittedString = projectInfoAsSplittedString[j].split("\\\\");
-	        		String[] artifactNameAndAlias = projectAndColorAsSplittedString[0].split(":");
-	        		Project.Artifact artifact = articacts.get(artifactNameAndAlias[0]);
-	        		if (projectAndColorAsSplittedString.length > 1) {
-	        			artifact.setColor(projectAndColorAsSplittedString[1]);
-	        		}
-	        		if (artifactNameAndAlias.length > 1) {
-	        			artifact.setAlias(artifactNameAndAlias[1]);
-	        		} else if (artifactNameAndAlias.length > 2){
-	        			throw new IllegalArgumentException();
-	        		}
-	        	}
-	        }
+			ObjectMapper mapper = new ObjectMapper();
+			for (Project projectFromConfig : mapper.readValue(projectsInfoAsString, Project[].class)) {
+				Project project = getProject(projectsInfo, projectFromConfig.getName());
+				if (project == null) {
+					throw new IllegalArgumentException("Project named " + projectFromConfig.getName() + " not found on Nexus");
+				}
+				for (Project.Artifact artifactFromConfig : projectFromConfig.getArtifacts()) {
+					Project.Artifact artifact = getArtifactForName(project, artifactFromConfig.getName());
+					if (artifact == null) {
+						throw new IllegalArgumentException("Artifact named " + artifactFromConfig.getName() + " not found on Nexus");
+					}
+					setIfNotNull(artifact::setAlias, artifactFromConfig::getAlias);
+					setIfNotNull(artifact::setColor, artifactFromConfig::getColor);
+					setIfNotNull(artifact::setSite, artifactFromConfig::getSite);
+				}
+			}
 		}
         return projectsInfo;
+	}
+
+	private <T> void setIfNotNull(Consumer<T> target, Supplier<T> source) {
+		T value = source.get();
+		if (value != null) {
+			target.accept(value);
+		}
 	}
 
 	private String getKey(GetStatsInput input) {
@@ -493,7 +559,7 @@ public class NexusConnector {
 	public static class Group {
 		private Collection<NexusConnector> nexusConnectors;
 
-		public Group(SimpleCache cache, Utility utility, Map<String, Object> configMap) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JAXBException, ParseException {
+		public Group(SimpleCache cache, Utility utility, Map<String, Object> configMap) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JAXBException, ParseException, JsonMappingException, JsonProcessingException {
 			configMap = new LinkedHashMap<>(configMap);
 			Map<String, Map<String, Object>> allNexusConfigurations = new LinkedHashMap<>();
 			String startDate = (String)configMap.remove("projects-info.start-date");
@@ -509,6 +575,9 @@ public class NexusConnector {
 			}
 			nexusConnectors = ConcurrentHashMap.newKeySet();
 			for (Map<String, Object> nexusConfiguration : allNexusConfigurations.values()) {
+				if (!Boolean.valueOf((String)nexusConfiguration.get("enabled"))) {
+					continue;
+				}
 				nexusConfiguration.put("projects-info.start-date", startDate);
 				NexusConnector nexusConnector = new NexusConnector(utility, nexusConfiguration);
 				nexusConnector.cache = cache;
@@ -522,12 +591,12 @@ public class NexusConnector {
 			for (NexusConnector nexusConnector : nexusConnectors) {
 				Set<String> artifactsToBeLoaded = new LinkedHashSet<>();
 				for (Project project : nexusConnector.allProjects) {
-					if (groupIds != null && !groupIds.contains(project.getGroupName())) {
+					if (groupIds != null && !groupIds.contains(project.getName())) {
 						continue;
 					}
 					if (artifactIds == null && aliases == null) {
-						for (Map.Entry<String, Project.Artifact> artifactEntry : project.getArtifacts().entrySet()) {
-							artifactsToBeLoaded.add(project.getGroupName() + ":" + artifactEntry.getValue().getId());
+						for (Project.Artifact artifact : project.getArtifacts()) {
+							artifactsToBeLoaded.add(project.getName() + ":" + artifact.getName());
 						}
 						continue;
 					}
@@ -535,20 +604,20 @@ public class NexusConnector {
 						for (String artifactId : artifactIds) {
 							String[] artifactIdAsSplittedString = artifactId.split(":");
 							if (artifactIdAsSplittedString.length > 1) {
-								if (project.getGroupName().equals(artifactIdAsSplittedString[0]) &&
-									nexusConnector.containsArtifactIds(project, artifactIdAsSplittedString[1])
+								if (project.getName().equals(artifactIdAsSplittedString[0]) &&
+									nexusConnector.containsArtifactNames(project, artifactIdAsSplittedString[1])
 								) {
-									artifactsToBeLoaded.add(project.getGroupName() + ":" + artifactIdAsSplittedString[1]);
+									artifactsToBeLoaded.add(project.getName() + ":" + artifactIdAsSplittedString[1]);
 								}
-							} else if (nexusConnector.containsArtifactIds(project, artifactIdAsSplittedString[0])) {
-								artifactsToBeLoaded.add(project.getGroupName() + ":" + artifactIdAsSplittedString[0]);
+							} else if (nexusConnector.containsArtifactNames(project, artifactIdAsSplittedString[0])) {
+								artifactsToBeLoaded.add(project.getName() + ":" + artifactIdAsSplittedString[0]);
 							}
 						}
 					}
 					if (aliases != null) {
 						Collection<Project.Artifact> artifacts = nexusConnector.getArtifactForAliases(project, aliases);
 						for (Project.Artifact artifact : artifacts) {
-							artifactsToBeLoaded.add(project.getGroupName() + ":" + artifact.getId());
+							artifactsToBeLoaded.add(project.getName() + ":" + artifact.getName());
 						}
 					}
 				}
@@ -571,8 +640,8 @@ public class NexusConnector {
 		private GetStatsInput toInput(NexusConnector nexusConnector, Project projectInfo, String artifactId, Date startDate, Integer months) {
 			startDate = startDate != null ? startDate : projectInfo.getStartDate().getTime();
 			return new GetStatsInput(
-				projectInfo.getGroupId(),
-				projectInfo.getGroupName(),
+				projectInfo.getId(),
+				projectInfo.getName(),
 				artifactId,
 				startDate,
 				months != null ? months : nexusConnector.computeDefaultMonths(startDate)
@@ -635,12 +704,14 @@ public class NexusConnector {
 	}
 
 
-	static class Project {
+	public static class Project implements Serializable {
+
+		private static final long serialVersionUID = -5218467892927341444L;
 
 		private Calendar startDate;
-		private String groupId;
-		private String groupName;
-		private Map<String, Artifact> artifacts;
+		private String id;
+		private String name;
+		private Collection <Artifact> artifacts;
 
 
 		public Calendar getStartDate() {
@@ -651,56 +722,58 @@ public class NexusConnector {
 		}
 
 
-		public String getGroupId() {
-			return groupId;
+		public String getId() {
+			return id;
 		}
 		public void setGroupId(String groupId) {
-			this.groupId = groupId;
+			this.id = groupId;
 		}
 
 
-		public String getGroupName() {
-			return groupName;
+		public String getName() {
+			return name;
 		}
-		public void setGroupName(String groupName) {
-			this.groupName = groupName;
+		public void setName(String groupName) {
+			this.name = groupName;
 		}
 
 
-		public Map<String, Artifact> getArtifacts() {
+		public Collection<Artifact> getArtifacts() {
 			return artifacts;
 		}
-		public void setArtifacts(Map<String, Artifact> artifacts) {
+		public void setArtifacts(Collection<Artifact> artifacts) {
 			this.artifacts = artifacts;
 		}
 
-
-
 		@Override
 		public String toString() {
-			return "Project [startDate=" + startDate + ", groupId=" + groupId + ", groupName=" + groupName
-					+ ", artifacts=" + artifacts + "]";
+			return "Project [startDate=" + startDate + ", id=" + id + ", name=" + name + ", artifacts=" + artifacts
+					+ "]";
 		}
 
+		static class Artifact implements Serializable {
 
-		static class Artifact {
+			private static final long serialVersionUID = -222016209791534123L;
 
-			private String id;
+			private String name;
 			private String alias;
 			private String color;
+			private String site;
 
-			public String getId() {
-				return id;
+			public String getName() {
+				return name;
 			}
-			public void setId(String id) {
-				this.id = id;
+			public void setName(String value) {
+				this.name = value;
 			}
+
 			public String getAlias() {
 				return alias;
 			}
 			public void setAlias(String alias) {
 				this.alias = alias;
 			}
+
 			public String getColor() {
 				return color;
 			}
@@ -708,9 +781,17 @@ public class NexusConnector {
 				this.color = color;
 			}
 
+			public String getSite() {
+				return site;
+			}
+			public void setSite(String site) {
+				this.site = site;
+			}
+
+
 			@Override
 			public String toString() {
-				return "Artifact [id=" + id + ", alias=" + alias + ", color=" + color + "]";
+				return "Artifact [name=" + name + ", alias=" + alias + ", color=" + color + ", site=" + site + "]";
 			}
 
 		}

@@ -39,6 +39,9 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+
 @SpringBootApplication
 //Uncomment this to use the FSBasedCache
 //@EnableAutoConfiguration(exclude = {
@@ -111,7 +114,7 @@ public class Application {
 		@Qualifier("cache") SimpleCache cache,
 		@Qualifier("utility") Utility utility,
 		@Qualifier("nexusConnectorGroup.config") Map<String, String> configMap
-	) throws UnsupportedEncodingException, JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
+	) throws UnsupportedEncodingException, JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JsonMappingException, JsonProcessingException {
 		Map<String, Object> configuration = new HashMap<>();
 		configuration.putAll(configMap);
 		return new NexusConnector.Group(cache, utility, configuration);

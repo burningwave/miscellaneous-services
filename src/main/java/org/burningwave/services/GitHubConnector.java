@@ -14,7 +14,6 @@ import java.util.GregorianCalendar;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -45,7 +44,6 @@ public class GitHubConnector {
 	private RestTemplate restTemplate;
 	private HttpHeaders headers;
 	private Supplier<UriComponentsBuilder> reposComponentsBuilder;
-	private Map<String, Collection<Project>> allProjectsInfo;
 	private Map<String, GetStarCountOutput> inMemoryCache;
 	private long timeToLiveForInMemoryCache;
 
@@ -59,12 +57,16 @@ public class GitHubConnector {
     public GitHubConnector(Map<String, Object> configMap) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
     	restTemplate = new RestTemplate();
     	headers = new HttpHeaders();
-        headers.set("Authorization", configMap.get("authorization.token.type") + " " + configMap.get("authorization.token"));
+    	String authorizationTokenType = (String)configMap.get("authorization.token.type");
+    	String authorizationToken = (String)configMap.get("authorization.token");
+    	if (authorizationToken != null) {
+    		headers.set("Authorization", (authorizationTokenType != null ? authorizationTokenType + " " : "") + authorizationToken);
+    	}
         reposComponentsBuilder = () -> UriComponentsBuilder.newInstance()
         	.scheme("https")
-        	.host((String)configMap.get("host"))
+        	.host((String)configMap
+        	.get("host"))
         	.pathSegment("repos");
-        allProjectsInfo = retrieveProjectsInfo((String)configMap.get("projects-info"));
         inMemoryCache = new ConcurrentHashMap<>();
         timeToLiveForInMemoryCache = Long.parseLong((String)configMap.get("cache.ttl"));
     }
@@ -90,24 +92,6 @@ public class GitHubConnector {
 	public void clearCache() {
 		inMemoryCache.clear();
 		logger.info("In memory cache cleaning done");
-	}
-
-    private Map<String, Collection<Project>> retrieveProjectsInfo(String projectInfosAsString) {
-    	Map<String, Collection<Project>> projectsInfo = new ConcurrentHashMap<>();
-    	for (String projectInfoAsString : projectInfosAsString.split(";")) {
-    		Collection<Project> projects = new CopyOnWriteArrayList<>();
-    		String[] infos = projectInfoAsString.split("/");
-    		String[] usernameAndGroupId = infos[0].split(":");
-    		projectsInfo.put(usernameAndGroupId[0], projects);
-    		for (int i = 1; i < infos.length; i++) {
-    			projects.add(
-    				new Project(
-    					infos[i]
-	    			)
-    			);
-    		}
-    	}
-		return projectsInfo;
 	}
 
 	public GetStarCountOutput getStarCount(Input input) {
@@ -156,8 +140,8 @@ public class GitHubConnector {
 	}
 
 
-	public Integer getAllStarCount(String user, String repoName) throws JAXBException {
-		return merge(invoke(this::getStarCount, user, repoName).stream().map(outputSupplier -> outputSupplier.join()).collect(Collectors.toList()));
+	public Integer getAllStarCount(String[] repositories) throws JAXBException {
+		return merge(invoke(this::getStarCount, repositories).stream().map(outputSupplier -> outputSupplier.join()).collect(Collectors.toList()));
 	}
 
 	private Integer merge(Collection<GetStarCountOutput> getStatsOutputs) {
@@ -171,54 +155,18 @@ public class GitHubConnector {
 		return null;
 	}
 
-	private <O> Collection<CompletableFuture<O>> invoke(Function<Input, O> function, String username, String repositoryName) {
+	private <O> Collection<CompletableFuture<O>> invoke(Function<Input, O> function, String[] repositories) {
 		Collection<CompletableFuture<O>> outputSuppliers = new ArrayList<>();
-		if (username != null && repositoryName != null) {
+		for (String repository : repositories) {
+			String[] repositoryInfos = repository.split(":");
 			Input input = new Input();
-			input.setUsername(username);
-			input.setRepositoyName(repositoryName);
+			input.setUsername(repositoryInfos[0]);
+			input.setRepositoyName(repositoryInfos[1]);
 			outputSuppliers.add(
 				CompletableFuture.supplyAsync(() ->
 					function.apply(input)
 				)
 			);
-		} else if (username == null && repositoryName != null) {
-			for (Map.Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
-				if (usernameAndRepositories.getValue().stream().filter(project -> repositoryName.equals(project.getRepositoryName())).findFirst().isPresent()) {
-					Input input = new Input();
-					input.setUsername(usernameAndRepositories.getKey());
-					input.setRepositoyName(repositoryName);
-					outputSuppliers.add(
-						CompletableFuture.supplyAsync(() ->
-							function.apply(input)
-						)
-					);
-				}
-			}
-		} else if (username != null && repositoryName == null) {
-			for (Project project : allProjectsInfo.get(username)) {
-				Input input = new Input();
-				input.setUsername(username);
-				input.setRepositoyName(project.getRepositoryName());
-				outputSuppliers.add(
-					CompletableFuture.supplyAsync(() ->
-						function.apply(input)
-					)
-				);
-			}
-		} else {
-			for (Map.Entry<String, Collection<Project>> usernameAndRepositories : allProjectsInfo.entrySet()) {
-				for (Project project : usernameAndRepositories.getValue()) {
-					Input input = new Input();
-					input.setUsername(usernameAndRepositories.getKey());
-					input.setRepositoyName(project.getRepositoryName());
-					outputSuppliers.add(
-						CompletableFuture.supplyAsync(() ->
-							function.apply(input)
-						)
-					);
-				}
-			}
 		}
 		return outputSuppliers;
 	}

@@ -255,19 +255,22 @@
 	
 	function buildSummary(artifactIds) {
 		for (j = 0; j < artifactIds.length; j++) {
-			var summaryItem = buildSummaryItem(artifactIds[j]);
+			var summaryItem = buildSummaryItem(artifactIds[j], getColorOrRandomColor(artifactIds[j]), getSite(artifactIds[j]));
 			jQuery("#downloadsSummary").append(summaryItem);
 		}
-		jQuery("#downloadsSummary").append(buildSummaryItem(null, 'rgb(0, 0, 0)'));
-		jQuery("#downloadsSummary").append(buildSummaryItem('Total', totalRowTextColor));
+		jQuery("#downloadsSummary").append(buildSummaryItem(null, 'rgb(0, 0, 0)', null));
+		jQuery("#downloadsSummary").append(buildSummaryItem('Total', totalRowTextColor, null));
 	}
 	
 	
-	function buildSummaryItem(artifactId, color) {
+	function buildSummaryItem(artifactId, color, site) {
+		var label = site != null ?
+			'<a href="' + site +'" style="color:' + color + ';">' + (artifactId != null ? artifactId : '') + '</a>' :
+			(artifactId != null ? artifactId : '');
 		var item = 
 			'<div id="' + artifactId + 'DownloadsRow" style="display: table-row; font-size: 14px;">' + 
-			'	<div style="display: table-cell;color: ' + (color != null ? color : getRandomColor(artifactId)) + ';">' + 
-			'   	<b>' + (artifactId != null ? artifactId : '') + '</b>' + (artifactId != null ? ':' : '') + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+			'	<div style="display: table-cell;color: ' + color + ';">' + 
+			'   	<b>' + label + '</b>' + (artifactId != null ? ':' : '') + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
 			'	</div>' +
 			'	<div id="' + artifactId + 'Downloads" style="display: table-cell; text-align: right; color: grey;">' +
 			'	</div>' +
@@ -383,30 +386,41 @@
 
 
     function getBackgroundColor(artifactId) {
-		return getRandomColor(artifactId);
+		return getColorOrRandomColor(artifactId);
     }
 
 
     function getBorderColor(artifactId){
-		return getRandomColor(artifactId);
+		return getColorOrRandomColor(artifactId);
     }
 	
-	function getRandomColor(artifactId) {
-		var artifactForColor;
+	function getColorOrRandomColor(artifactId) {
+		var artifactInfos;
 		for (i = 0; i < allProjectInfos.length; i++) {
 			if (allProjectInfos[i][0] == artifactId) {
-				artifactForColor = allProjectInfos[i];
+				artifactInfos = allProjectInfos[i];
 				break;				
 			}
         }
-		if (artifactForColor == null) {
-			artifactForColor = [artifactId, null];
-			allProjectInfos.push(artifactForColor);
+		if (artifactInfos == null) {
+			artifactInfos = [artifactId, null];
+			allProjectInfos.push(artifactInfos);
 		}
-		if (artifactForColor[2] == null) {
-			artifactForColor[2] = 'rgb(' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ')';
+		if (artifactInfos[2] == null) {
+			artifactInfos[2] = 'rgb(' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ')';
 		}
-		return artifactForColor[2];
+		return artifactInfos[2];
+	}
+	
+	function getSite(artifactId) {
+		var artifactInfos;
+		for (i = 0; i < allProjectInfos.length; i++) {
+			if (allProjectInfos[i][0] == artifactId) {
+				artifactInfos = allProjectInfos[i];
+				break;				
+			}
+        }
+		return artifactInfos != null ? artifactInfos[3] : null;
 	}
 
 

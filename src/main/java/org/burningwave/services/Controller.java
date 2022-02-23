@@ -136,23 +136,21 @@ public class Controller {
 
 	@GetMapping(path = "/stats/star-count", produces = "application/json")
 	public Object getStarCount(
-		@RequestParam(value = "username", required = false) String username,
-		@RequestParam(value = "repositoryName", required = false) String repositoryName
+		@RequestParam(value = "repository", required = true) String[] repositories
 	) {
-		Integer value = getStarCountOrNull(username, repositoryName);
+		Integer value = getStarCountOrNull(repositories);
 		return value != null? value : "null";
 	}
 
 	@GetMapping(path = "/stats/star-count-badge", produces = "image/svg+xml")
 	public Object getStarCountBadge(
-		@RequestParam(value = "username", required = false) String username,
-		@RequestParam(value = "repositoryName", required = false) String repositoryName,
+		@RequestParam(value = "repository", required = true) String[] repositories,
 		HttpServletResponse response
 	) {
 		response.setHeader("Cache-Control", "no-store");
 		String label = "GitHub stars";
 		return badge.build(
-			getStarCountOrNull(username, repositoryName),
+			getStarCountOrNull(repositories),
 			label,
 			"GitHub stars", "#78e", 93
 		);
@@ -220,10 +218,10 @@ public class Controller {
 		}
 	}
 
-	private Integer getStarCountOrNull(String username, String repositoryName) {
+	private Integer getStarCountOrNull(String[] repositories) {
 		try {
 			try {
-				return gitHubConnector.getAllStarCount(username, repositoryName);
+				return gitHubConnector.getAllStarCount(repositories);
 			} catch (NullPointerException exc){
 				if (gitHubConnector == null) {
 					logger.warn("The GitHub connector is disabled");
