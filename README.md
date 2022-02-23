@@ -10,7 +10,7 @@ A simple application with which is possible:
 
 ## Deploy requirements
 
-The application can be deployed on [**Heroku**](https://www.heroku.com) or any other platform as a service.
+The application can be deployed on [**Heroku**](https://www.heroku.com) or any other PaaS.
 By default the application uses the file system based cache but it is recommended to use the database based cache by setting the [**environment property**](https://devcenter.heroku.com/articles/config-vars) `CACHE_TYPE` to `Database based`: in this case it is required a [**PostgreSQL DBMS**](https://www.postgresql.org/) which on Heroku can be simply installed with the [**Heroku Postgres addon**](https://elements.heroku.com/addons/heroku-postgresql).
 
 ## Configuration
