@@ -113,7 +113,13 @@
 		var defaultDateAsString = '2018-12-01';
 		var allProjectInfos = getAllProjectInfos();
 		var totalRowTextColor = 'rgb(0, 0, 0)';
-	    try {
+		var startDate;
+		var monthlyTrendChartDatasets = [];
+	    var overallTrendChartDatasets = [];
+		var loadedArtifactIds = [];
+	    var attemptedLoadingArtifactIds = [];
+	    
+		try {
 			var groupIdsQueryParam = toArray(getQueryParam("groupId"));
 			var artifactIdsQueryParam = toArray(getQueryParam("artifactId"));
 			var aliasQueryParam = toArray(getQueryParam("alias"));
@@ -123,20 +129,19 @@
 			var startDateQueryParam = getQueryParam("startDate");
 			var monthsQueryParam = getQueryParam("months");
 			
-	        var startDate = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
+	        startDate = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
 			var startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
 	        var endDate = (monthsQueryParam != null ? startDateForComputation.add(monthsQueryParam,'month') : moment()).startOf('month').add(-1,'day');
 	        var timeValues = [];
 			startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
 			var months;
+			
 	        while (endDate > startDateForComputation || startDateForComputation.format('M') === endDate.format('M')) {
 	            timeValues.push(startDateForComputation.format('MMM YYYY'));
 	            startDateForComputation.add(1,'month');
 				months = months != null ? months + 1 : 1;
 	        }
 		
-	        var monthlyTrendChartDatasets = [];
-	        var overallTrendChartDatasets = [];
 	        var overallTrendChart = null;
 	        var monthlyTrendChart = null;
 	        var showOverallTrendChart = getQueryParam("show-overall-trend-chart");
@@ -155,8 +160,6 @@
 	            document.getElementById("separatorDivOne").style.display = "none";
 	        }
 	
-	        var loadedArtifactIds = [];
-	        var attemptedLoadingArtifactIds = [];
 	        for (i = 0; i < artifactIds.length; i++) {
 	            launchAsyncCallForOne(artifactIds[i], 3);
 	        }
