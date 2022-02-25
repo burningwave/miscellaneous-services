@@ -76,7 +76,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @SpringBootApplication
@@ -234,15 +233,11 @@ public class Application extends SpringBootServletInitializer {
 			});
 		}
 
-	    @Override
-	    public void addViewControllers(ViewControllerRegistry registry) {
-	        registry.addViewController("/notFound").setViewName("artifact-download-chart");
-	    }
 
 		@Bean
 		public WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> containerCustomizer() {
 			return container -> {
-				container.addErrorPages(new ErrorPage(HttpStatus.NOT_FOUND, "/notFound"));
+				container.addErrorPages(new ErrorPage(HttpStatus.NOT_FOUND, "/miscellaneous-services/stats/artifact-download-chart"));
 			};
 		}
 
