@@ -15,15 +15,14 @@
 		<script type='text/javascript' src="./../../js/moment.min.js"></script>
 		<style>
 			
-			div.header-wrap {
+			div.header {
 			    background-image: linear-gradient(120deg, #e54d1d, #f7bc12);
 				border-radius: 0px 0px 10px 10px;
-				color: #ffffff;
+				color: ghostwhite;
 			    position: fixed;
 			    width: 100%;
 			    height: 180px;
 			    top: 0;
-			    z-index: 1;
 				max-width: 100%;
 			}
 			
@@ -31,10 +30,22 @@
 			    margin-top: 200px;
 				margin-right: 20px;
 				margin-left: 20px;
+				margin-bottom: 40px;
+			}
+			
+			div.footer {
+				background-image: linear-gradient(120deg, #e54d1d, #f7bc12);
+			    position: fixed;
+			    bottom: 0;
+				width: 100%;
+				max-width: 100%;
+				text-align:right;
+				padding-bottom: 4px;
+				padding-top: 2px;
 			}
 			
 			@media screen and (min-width: 63px) {
-			    div.header-wrap {
+			    div.header {
 			    	height: 160px;
 			    }
 				div.container {
@@ -43,7 +54,7 @@
 			}
 			
 			@media screen and (min-width: 77px) {
-			    div.header-wrap {
+			    div.header {
 			    	height: 100px;
 			    }
 				div.container {
@@ -52,7 +63,7 @@
 			}
 			
 			@media screen and (min-width: 576px) {
-			    div.header-wrap {
+			    div.header {
 			    	height: 60px;
 			    }
 				div.container {
@@ -133,7 +144,7 @@
 		</style>
 	</head>
 	<body style="margin: 0px; font-family: 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif';">
-		<div class="header-wrap">
+		<div class="header">
 			<h1 style="margin: 12px; font-weight: 500;">Artifact downloads from Maven Central</h1>
 		</div>
 		<div class="container">
@@ -157,12 +168,12 @@
 					<canvas id="monthlyTrendChart"></canvas>
 				</div>
 			</div>
-			<div style="margin-top: 30px; text-align: right;">
-				Powered by
-				<a href="#" onclick="goToUrl('https://burningwave.github.io/miscellaneous-services/');return false;">
-					<span style="font-family: 'Aldo Pro Book'; font-size: 23px; font-style: italic; font-weight: bold;">Burningwave</span>
-				</a>
-			</div>
+		</div>
+		<div class="footer">
+			Powered by
+			<a href="#" onclick="goToUrl('https://burningwave.github.io/miscellaneous-services/');return false;">
+				<span style="font-family: 'Aldo Pro Book'; font-size: 23px; font-style: italic; font-weight: bold;">Burningwave</span>&nbsp;&nbsp;
+			</a>
 		</div>
 	</body>
 	<script>
