@@ -35,10 +35,12 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
@@ -121,14 +123,19 @@ public class NexusConnector {
 
 	public void setHost(Configuration nexusConfiguration) throws JAXBException {
 		String[] hosts = nexusConfiguration.getHost().split("\\|");
+		String username = new String(
+			Base64.getDecoder().decode(
+				entity.getHeaders().get("Authorization").iterator().next().split("\\s")[1]
+			), StandardCharsets.UTF_8
+		).split(":")[0];
 		for (String host : hosts) {
     		getStatsUriComponentsBuilder = () -> UriComponentsBuilder.newInstance().scheme(nexusConfiguration.getScheme()).host(host);
     		try {
 				callGetGroupListRemote();
-				logger.info("User login successful on {}", host);
+				logger.info("Login successful on {} for user {}", host, username);
 				return;
 			} catch (org.springframework.web.client.HttpClientErrorException.Forbidden | org.springframework.web.client.HttpClientErrorException.Unauthorized exc) {
-				logger.info("Unable to log in {}", host);
+				logger.info("Unable to login {} on {}", username, host);
 				if (host == hosts[hosts.length - 1]) {
 					logger.info("Throwing exception", host);
 					throw exc;
