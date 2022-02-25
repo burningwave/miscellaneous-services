@@ -54,6 +54,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.web.server.ErrorPage;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ConditionContext;
@@ -64,6 +68,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -71,6 +76,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @SpringBootApplication
@@ -80,7 +86,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 })
 @EnableScheduling
 @EnableAsync
-public class Application {
+public class Application extends SpringBootServletInitializer {
+
 	final static String SCHEME_AND_HOST_NAME_CACHE_KEY = "SchemeAndHostname";
 	private static ApplicationContext applicationContext;
 	String schemeAndHostName;
@@ -225,6 +232,18 @@ public class Application {
 					return HandlerInterceptor.super.preHandle(request, response, handler);
 				}
 			});
+		}
+
+	    @Override
+	    public void addViewControllers(ViewControllerRegistry registry) {
+	        registry.addViewController("/notFound").setViewName("artifact-download-chart");
+	    }
+
+		@Bean
+		public WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> containerCustomizer() {
+			return container -> {
+				container.addErrorPages(new ErrorPage(HttpStatus.NOT_FOUND, "/notFound"));
+			};
 		}
 
 	}

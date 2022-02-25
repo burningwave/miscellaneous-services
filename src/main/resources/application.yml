@@ -26,6 +26,18 @@
  # AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  # OR OTHER DEALINGS IN THE SOFTWARE.
  #
+
+spring.datasource.url: ${JDBC_DATABASE_URL:jdbc:postgresql://localhost:5432/postgres}
+spring.datasource.username: ${JDBC_DATABASE_USERNAME:postgres}
+spring.datasource.password: ${JDBC_DATABASE_PASSWORD}
+
+spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation: true
+spring.jpa.properties.hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto: update
+
+spring.mvc.view.prefix: /WEB-INF/jsp/
+spring.mvc.view.suffix: .jsp 
+ 
 application.authorization.token: ${APPLICATION_AUTHORIZATION_TOKEN}
 application.authorization.token.type: ${APPLICATION_AUTHORIZATION_TOKEN_TYPE:Basic}
 
@@ -40,14 +52,6 @@ github-connector.cache.ttl: ${GITHUB_CONNECTOR_CACHE_TTL:86400000}
 
 cache.type: ${CACHE_TYPE:File system based}
 cache.base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
-
-spring.datasource.url: ${JDBC_DATABASE_URL:jdbc:postgresql://localhost:5432/postgres}
-spring.datasource.username: ${JDBC_DATABASE_USERNAME:postgres}
-spring.datasource.password: ${JDBC_DATABASE_PASSWORD}
-
-spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation: true
-spring.jpa.properties.hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.hibernate.ddl-auto: update
 
 #To disable this set the environment property SCHEDULED_OPERATIONS_PING_CRON to - 
 scheduled-operations.ping.cron: ${SCHEDULED_OPERATIONS_PING_CRON:0 0/25 * * * *}

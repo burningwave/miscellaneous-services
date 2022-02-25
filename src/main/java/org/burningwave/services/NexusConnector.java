@@ -125,10 +125,10 @@ public class NexusConnector {
     		getStatsUriComponentsBuilder = () -> UriComponentsBuilder.newInstance().scheme(nexusConfiguration.getScheme()).host(host);
     		try {
 				callGetGroupListRemote();
-				logger.info("User detected on {}", host);
+				logger.info("User login successful on {}", host);
 				return;
 			} catch (org.springframework.web.client.HttpClientErrorException.Forbidden | org.springframework.web.client.HttpClientErrorException.Unauthorized exc) {
-				logger.info("Exception occured for {}", host);
+				logger.info("Unable to log in {}", host);
 				if (host == hosts[hosts.length - 1]) {
 					logger.info("Throwing exception", host);
 					throw exc;

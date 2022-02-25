@@ -1,18 +1,20 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <html>
 	<head>
-		<link rel="shortcut icon" type="image/png" href="../../image/favicon.png">
+		<link rel="shortcut icon" type="image/png" href="<c:out value="${basePath}"/>/image/favicon.png">
 		<meta content="width=device-width, initial-scale=1" name="viewport" />
 		<meta property="og:title" content="Artifact downloads from Maven Central" />
 		<meta property="og:description" content="A dashboard with download statistics" />
-		<meta property="og:image" content="https://burningwave.herokuapp.com/image/only-flame-logo.png">
+		<meta property="og:image" content="<c:out value="${basePath}"/>/image/logo.png">
 		<meta property="og:image:width" content="572" />
 		<meta property="og:image:height" content="546" />		
 		<meta property="twitter:title" content="Artifact downloads from Maven Central" />		
 		<meta name="twitter:card" content="summary" />
 		<meta name="theme-color" content="#e54d1d">
-		<script type='text/javascript' src='./../../js/jquery-3.6.0.js'></script>
-		<script type='text/javascript' src="./../../js/Chart.min.js"></script>
-		<script type='text/javascript' src="./../../js/moment.min.js"></script>
+		<script type='text/javascript' src="<c:out value="${basePath}"/>/js/jquery-3.6.0.js"></script>
+		<script type='text/javascript' src="<c:out value="${basePath}"/>/js/Chart.min.js"></script>
+		<script type='text/javascript' src="<c:out value="${basePath}"/>/js/moment.min.js"></script>
 		<style>
 			
 			div.header {
@@ -84,9 +86,9 @@
 			@font-face {
 			    font-family: 'Aldo Pro Book';
 			    src: local('Aldo Pro Book'), local('Aldo-Pro-Book'),
-			        url('./../../font/AldoPro-Bold.woff2') format('woff2'),
-			        url('./../../font/AldoPro-Bold.woff') format('woff'),
-			        url('./../../font/AldoPro-Bold.ttf') format('truetype');
+			        url('<c:out value="${basePath}"/>/font/AldoPro-Bold.woff2') format('woff2'),
+			        url('<c:out value="${basePath}"/>/font/AldoPro-Bold.woff') format('woff'),
+			        url('<c:out value="${basePath}"/>/font/AldoPro-Bold.ttf') format('truetype');
 			    font-weight: normal;
 			    font-style: normal;
 			}
@@ -171,7 +173,7 @@
 		</div>
 		<div class="footer">
 			Powered by
-			<a href="#" onclick="goToUrl('https://burningwave.github.io/miscellaneous-services/');return false;">
+			<a href="#" onclick="goToUrl('<c:out value="${basePath}"/>/miscellaneous-services/');return false;">
 				<span style="font-family: 'Aldo Pro Book'; font-size: 23px; font-style: italic; font-weight: bold;">Burningwave</span>
 			</a>
 		</div>
@@ -504,7 +506,7 @@
 	    function launchAsyncCall(artifactId, startDate, months) {
 	        var startDateParam = startDate != null ? '&startDate=' + startDate : '';
 	        var monthsParam = months != null ? '&months=' + months : '';
-	        var url = './downloads-for-month?' +
+	        var url = '<c:out value="${basePath}"/>/miscellaneous-services/stats/downloads-for-month?' +
 				'groupId=' + artifactId.split(':')[0] + '&' +
 				'artifactId=' + artifactId.split(':')[1] + '&' +
 				startDateParam + monthsParam;
@@ -525,7 +527,7 @@
 	    }
 	
 		function getAllProjectInfosFromRemote() {
-	        var url = './../nexus-connector/project-info';
+	        var url = '<c:out value="${basePath}"/>/miscellaneous-services/nexus-connector/project-info';
 	        return jQuery.ajax({
 	            url: url,
 	            data: {
