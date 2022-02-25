@@ -173,7 +173,7 @@
 		</div>
 		<div class="footer">
 			Powered by
-			<a href="#" onclick="goToUrl('/miscellaneous-services/');return false;">
+			<a href="#" onclick="goToUrl('https://burningwave.github.io/miscellaneous-services/');return false;">
 				<span style="font-family: 'Aldo Pro Book'; font-size: 23px; font-style: italic; font-weight: bold;">Burningwave</span>
 			</a>
 		</div>
