@@ -53,6 +53,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.web.server.ErrorPage;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -80,8 +82,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @SpringBootApplication
 @EnableAutoConfiguration(exclude = {
-	org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
-	org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
+	DataSourceAutoConfiguration.class,
+	HibernateJpaAutoConfiguration.class
 })
 @EnableScheduling
 @EnableAsync
@@ -284,8 +286,8 @@ public class Application extends SpringBootServletInitializer {
 
 
 	@Import({
-		org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
-		org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration.class
+		DataSourceAutoConfiguration.class,
+		HibernateJpaAutoConfiguration.class
 	})
 	@EnableJpaRepositories(basePackages = {"org.burningwave"}, considerNestedRepositories = true)
 	@EntityScan(basePackages = {"org.burningwave"})
