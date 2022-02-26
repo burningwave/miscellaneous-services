@@ -216,7 +216,7 @@ public class RestController {
 		} else {
 			logger.error(message = "Cannot clear cache: unauthorized");
 		}
-		response.sendRedirect("stats/artifact-download-chart.html?message=" + message);
+		response.sendRedirect("stats/artifact-download-chart?message=" + message);
 	}
 
 	private Long getTotalDownloadsOrNull(Set<String> groupIds, Set<String> aliases, Set<String> artifactIds, String startDate, String months) {
