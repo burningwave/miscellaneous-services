@@ -4,9 +4,9 @@
 </a>
 
 A simple application with which is possible:
-* to retrieve [some statistical data](https://burningwave.herokuapp.com/miscellaneous-services/stats/artifact-download-chart.html) from [Nexus](https://oss.sonatype.org/)
-* to generate the artifact downloads badge&nbsp;🠊&nbsp;&nbsp;&nbsp;[![Artifact downloads](https://burningwave.herokuapp.com/miscellaneous-services/stats/total-downloads-badge)](#burningwave-miscellaneous-services)
-* to generate the GitHub stars badge&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🠊&nbsp;&nbsp;&nbsp;[![GitHub stars](https://burningwave.herokuapp.com/miscellaneous-services/stats/star-count-badge?repository=burningwave:jvm-driver&repository=burningwave:core&repository=burningwave:graph&repository=burningwave:tools&repository=toolfactory:narcissus&repository=toolfactory:jvm-driver)](#burningwave-miscellaneous-services)
+* to retrieve [some statistical data](https://shared-software.herokuapp.com/miscellaneous-services/stats/artifact-download-chart.html) from [Nexus](https://oss.sonatype.org/)
+* to generate the artifact downloads badge&nbsp;🠊&nbsp;&nbsp;&nbsp;[![Artifact downloads](https://shared-software.herokuapp.com/miscellaneous-services/stats/total-downloads-badge)](#burningwave-miscellaneous-services)
+* to generate the GitHub stars badge&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🠊&nbsp;&nbsp;&nbsp;[![GitHub stars](https://shared-software.herokuapp.com/miscellaneous-services/stats/star-count-badge?repository=burningwave:jvm-driver&repository=burningwave:core&repository=burningwave:graph&repository=burningwave:tools&repository=toolfactory:narcissus&repository=toolfactory:jvm-driver)](#burningwave-miscellaneous-services)
 
 ## Deploy requirements
 
@@ -32,7 +32,7 @@ On Heroku the minimal configuration requires only to set the `NEXUS_CONNECTOR_GR
 
 <br>
 
-If you need to set up multiple Nexus accounts or customize the color and the target of the links in the [artifact download statistics page](https://burningwave.herokuapp.com/miscellaneous-services/stats/artifact-download-chart.html), you can do the following:
+If you need to set up multiple Nexus accounts or customize the color and the target of the links in the [artifact download statistics page](https://shared-software.herokuapp.com/miscellaneous-services/stats/artifact-download-chart.html), you can do the following:
 ```json
 {
     "connector": [{
