@@ -50,12 +50,18 @@ github-connector.authorization.token: ${GITHUB_CONNECTOR_AUTHORIZATION_TOKEN}
 github-connector.authorization.token.type: ${GITHUB_CONNECTOR_AUTHORIZATION_TOKEN_TYPE:Bearer}
 github-connector.cache.ttl: ${GITHUB_CONNECTOR_CACHE_TTL:86400000}
 
+heroku-connector.authorization.token: ${HEROKU_CONNECTOR_AUTHORIZATION_TOKEN}
+heroku-connector.remote.authorization.token: ${HEROKU_CONNECTOR_REMOTE_AUTHORIZATION_TOKEN}
+
 cache.type: ${CACHE_TYPE:File system based}
 cache.base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
 
 #To disable this set the environment property SCHEDULED_OPERATIONS_PING_CRON to - 
-scheduled-operations.ping.cron: ${SCHEDULED_OPERATIONS_PING_CRON:0 0/29 * * * *}
+scheduled-operations.ping.cron: ${SCHEDULED_OPERATIONS_PING_CRON:0 0/25 * * * *}
 scheduled-operations.ping.zone: ${SCHEDULED_OPERATIONS_PING_ZONE:UTC}
+
+scheduled-operations.switch-to-remote-app.cron: ${SCHEDULED_OPERATIONS_SWITCH_TO_REMOTE_APP_CRON:-}
+scheduled-operations.switch-to-remote-app.zone: ${SCHEDULED_OPERATIONS_SWITCH_TO_REMOTE_APP_ZONE:UTC}
 
 burningwave.core.static-component-container.managed-logger.repository: 'org.burningwave.core.SLF4JManagedLoggerRepository'
 burningwave.core.static-component-container.modules.export-all-to-all: false

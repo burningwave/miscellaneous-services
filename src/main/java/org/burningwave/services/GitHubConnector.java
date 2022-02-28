@@ -69,6 +69,7 @@ public class GitHubConnector {
 
 	private final static org.slf4j.Logger logger;
 
+	@Autowired
 	private RestTemplate restTemplate;
 	private HttpHeaders headers;
 	private Supplier<UriComponentsBuilder> reposComponentsBuilder;

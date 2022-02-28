@@ -34,12 +34,15 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBException;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.burningwave.Badge;
 import org.burningwave.DBBasedCache;
 import org.burningwave.FSBasedCache;
@@ -71,6 +74,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -147,12 +151,13 @@ public class Application extends SpringBootServletInitializer {
 	@ConditionalOnProperty(prefix = "nexus-connector.group", name = "enabled", havingValue = "true")
 	public NexusConnector.Group nexusConnector(
 		@Qualifier("cache") SimpleCache cache,
+		@Qualifier("restTemplate") RestTemplate restTemplate,
 		@Qualifier("utility") Utility utility,
 		@Qualifier("nexusConnectorGroup.config") Map<String, String> configMap
 	) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, IOException {
 		Map<String, Object> configuration = new HashMap<>();
 		configuration.putAll(configMap);
-		return new NexusConnector.Group(cache, utility, configuration);
+		return new NexusConnector.Group(cache, restTemplate, utility, configuration);
 	}
 
 	@Bean("gitHubConnector.config")
@@ -171,6 +176,21 @@ public class Application extends SpringBootServletInitializer {
 		configuration.putAll(configMap);
 		GitHubConnector gitHubConnector = new GitHubConnector(configuration);
 		return gitHubConnector;
+	}
+
+	@Bean("herokuConnector.config")
+	@ConfigurationProperties("heroku-connector")
+	public Map<String, String> herokuConnectorConfig(){
+		return new LinkedHashMap<>();
+	}
+
+	@Bean("herokuConnector")
+	@ConditionalOnExpression(value = "'${heroku-connector.authorization.token}' != null && '${heroku-connector.remote.authorization.token}' != null")
+	public HerokuConnector herokuConnector(
+		@Qualifier("herokuConnector.config") Map<String, String> configMap
+	) {
+		HerokuConnector connector = new HerokuConnector(configMap);
+		return connector;
 	}
 
 	@Bean("applicationSelfConnector.config")
@@ -192,8 +212,8 @@ public class Application extends SpringBootServletInitializer {
 	}
 
 	@Bean
-	public WebMvcConfigurer webMvcConfigurer(Application application, @Qualifier("cache") SimpleCache cache) {
-		return new WebMvcConfigurer(application, cache);
+	public WebMvcConfigurer webMvcConfigurer(Application application) {
+		return new WebMvcConfigurer(application);
 	}
 
 	@Scheduled(
@@ -205,12 +225,32 @@ public class Application extends SpringBootServletInitializer {
 		applicationContext.getBean(SelfConnector.class).ping();
 	}
 
+	@Scheduled(
+		cron = "${scheduled-operations.switch-to-remote-app.cron}",
+		zone = "${scheduled-operations.switch-to-remote-app.zone}"
+	)
+	@Async
+	public void switchToRemoteApp() throws Throwable {
+		applicationContext.getBean(HerokuConnector.class).switchToRemoteApp();
+	}
+
+	@Bean("restTemplate")
+	public RestTemplate restTemplate() {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpClient httpClient = HttpClientBuilder.create().build();
+        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
+        restTemplate.setRequestFactory(requestFactory);
+        return restTemplate;
+	}
+
+	public String getURL(String relativePath) {
+		return Optional.ofNullable(schemeAndHostName).map(url -> url + relativePath).orElseGet(() -> null);
+	}
+
 	public static class WebMvcConfigurer implements org.springframework.web.servlet.config.annotation.WebMvcConfigurer {
-		private SimpleCache cache;
 		private Application application;
 
-		public WebMvcConfigurer(Application application, SimpleCache cache) {
-			this.cache = cache;
+		public WebMvcConfigurer(Application application) {
 			this.application = application;
 		}
 
@@ -219,13 +259,13 @@ public class Application extends SpringBootServletInitializer {
 			registry.addInterceptor(new HandlerInterceptor() {
 				@Override
 				public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-					if (application.schemeAndHostName == null) {
+					String applicationSchemeAndHostName = ServletUriComponentsBuilder.fromCurrentContextPath().build().toString();
+					if (applicationSchemeAndHostName != application.schemeAndHostName) {
 						synchronized(application) {
-							if (application.schemeAndHostName == null) {
-								application.schemeAndHostName = cache.load(Application.SCHEME_AND_HOST_NAME_CACHE_KEY);
-								if (application.schemeAndHostName == null) {
-									application.schemeAndHostName = ServletUriComponentsBuilder.fromCurrentContextPath().build().toString();
-									cache.store(Application.SCHEME_AND_HOST_NAME_CACHE_KEY, application.schemeAndHostName);
+							if (applicationSchemeAndHostName != application.schemeAndHostName) {
+								if (applicationSchemeAndHostName != application.schemeAndHostName) {
+									application.schemeAndHostName = applicationSchemeAndHostName;
+									application.notifyAll();
 								}
 							}
 						}
@@ -236,7 +276,7 @@ public class Application extends SpringBootServletInitializer {
 		}
 
 
-		@Bean
+		@Bean("containerCustomizer")
 		public WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> containerCustomizer() {
 			return container -> {
 				container.addErrorPages(new ErrorPage(HttpStatus.NOT_FOUND, "/miscellaneous-services/stats/artifact-download-chart"));
@@ -244,7 +284,6 @@ public class Application extends SpringBootServletInitializer {
 		}
 
 	}
-
 
 	public static class SelfConnector {
 
@@ -256,17 +295,7 @@ public class Application extends SpringBootServletInitializer {
 	    	restTemplate = new RestTemplate();
 	        entity = new HttpEntity<String>(new HttpHeaders());
 	        getStatsTotalDownloadsUriComponentsBuilder = () -> {
-	        	if (application.schemeAndHostName == null) {
-	        		synchronized(application) {
-	        			if (application.schemeAndHostName == null) {
-			        		application.schemeAndHostName = cache.load(Application.SCHEME_AND_HOST_NAME_CACHE_KEY);
-			        		if (application.schemeAndHostName == null) {
-			        			return null;
-			        		}
-	        			}
-	        		}
-	        	}
-	        	return application.schemeAndHostName + "/miscellaneous-services/stats/total-downloads?groupId=org.burningwave&artifactId=core";
+	        	return application.getURL("/miscellaneous-services/stats/total-downloads?groupId=org.burningwave&artifactId=core");
 	        };
 	    }
 

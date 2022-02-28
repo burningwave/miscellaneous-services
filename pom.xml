@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>org.burningwave</groupId>
 	<artifactId>miscellaneous-services</artifactId>
-	<version>8.0.0</version>
+	<version>9.0.0</version>
 	<name>Miscellaneous services</name>
 	<description>Miscellaneous services</description>
 	<properties>
@@ -66,6 +66,18 @@
 		    <groupId>org.burningwave</groupId>
 		    <artifactId>jvm-driver</artifactId>
 		    <version>6.8.6</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.apache.httpcomponents</groupId>
+		    <artifactId>httpclient</artifactId>
+		    <version>4.5.13</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.json</groupId>
+		    <artifactId>json</artifactId>
+		    <version>20211205</version>
 		</dependency>
 		
 		<dependency>

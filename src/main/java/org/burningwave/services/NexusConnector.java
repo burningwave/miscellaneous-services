@@ -60,6 +60,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import javax.annotation.PostConstruct;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -106,9 +107,9 @@ public class NexusConnector {
     	logger = org.slf4j.LoggerFactory.getLogger(NexusConnector.class);
     }
 
-    public NexusConnector(Utility utility, Configuration nexusConfiguration) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JsonMappingException, JsonProcessingException {
+    public NexusConnector(RestTemplate restTemplate, Utility utility, Configuration nexusConfiguration) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JsonMappingException, JsonProcessingException {
     	this.utility = utility;
-    	restTemplate = new RestTemplate();
+    	this.restTemplate = restTemplate;
     	HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", nexusConfiguration.getAuthorization().getToken().getType() + " " + nexusConfiguration.getAuthorization().getToken().getValue());
         entity = new HttpEntity<String>(headers);
@@ -119,6 +120,11 @@ public class NexusConnector {
         inMemoryCache = new ConcurrentHashMap<>();
         timeToLiveForInMemoryCache = nexusConfiguration.getCache().getTtl();
         dayOfTheMonthFromWhichToLeave = nexusConfiguration.getCache().getDayOfTheMonthFromWhichToLeave();
+    }
+
+    @PostConstruct
+    private void init() {
+
     }
 
 	public void setHost(Configuration nexusConfiguration) throws JAXBException {
@@ -602,7 +608,7 @@ public class NexusConnector {
 	public static class Group {
 		private Collection<NexusConnector> nexusConnectors;
 
-		public Group(SimpleCache cache, Utility utility, Map<String, Object> configMap) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JAXBException, ParseException, IOException {
+		public Group(SimpleCache cache, RestTemplate restTemplate, Utility utility, Map<String, Object> configMap) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JAXBException, ParseException, IOException {
 
 			ObjectMapper mapper = new ObjectMapper();
 			Configuration configuration = mapper.readValue(
@@ -653,7 +659,7 @@ public class NexusConnector {
 					continue;
 				}
 				nexusConfiguration.setStartDate(configuration.getDefaultProjectConfig().getStartDate());
-				NexusConnector nexusConnector = new NexusConnector(utility, nexusConfiguration);
+				NexusConnector nexusConnector = new NexusConnector(restTemplate, utility, nexusConfiguration);
 				nexusConnector.cache = cache;
 				nexusConnectors.add(nexusConnector);
 			}
