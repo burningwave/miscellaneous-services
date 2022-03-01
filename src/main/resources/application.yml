@@ -35,7 +35,10 @@ spring.jpa.properties.hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
 spring.jpa.hibernate.ddl-auto: update
 
 spring.mvc.view.prefix: /WEB-INF/jsp/
-spring.mvc.view.suffix: .jsp 
+spring.mvc.view.suffix: .jsp
+
+springdoc.api-docs.path: /miscellaneous-services/api-docs
+springdoc.swagger-ui.path: /miscellaneous-services/api-docs.html
  
 application.authorization.token: ${APPLICATION_AUTHORIZATION_TOKEN}
 application.authorization.token.type: ${APPLICATION_AUTHORIZATION_TOKEN_TYPE:Basic}

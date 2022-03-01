@@ -31,6 +31,8 @@ package org.burningwave.services;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -48,9 +50,18 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
+
 @org.springframework.web.bind.annotation.RestController
 @RequestMapping("/miscellaneous-services/")
 @CrossOrigin
+@OpenAPIDefinition(
+    info = @Info(
+        title="Miscellaneous services",
+        version = "9.0.0"
+    )
+)
 public class RestController {
 	private final static org.slf4j.Logger logger;
 	private Environment environment;
@@ -81,7 +92,7 @@ public class RestController {
 	}
 
 	@GetMapping(path = "/nexus-connector/project-info", produces = "application/json")
-	public Object getProjectInfo() {
+	public Collection<String[]> getProjectInfo() {
 		try {
 			try {
 				return nexusConnectorGroup.getAllProjectInfos();
@@ -94,25 +105,24 @@ public class RestController {
 			}
 		} catch (Throwable exc) {
 			logger.error("Exception occurred", exc);
-			return "null";
+			return null;
 		}
 
 	}
 
 	@GetMapping(path = "/stats/total-downloads", produces = "application/json")
-	public Object getTotalDownloads(
+	public Long getTotalDownloads(
 		@RequestParam(value = "groupId", required = false) Set<String> groupIds,
 		@RequestParam(value = "alias", required = false) Set<String> aliases,
 		@RequestParam(value = "artifactId", required = false) Set<String> artifactIds,
 		@RequestParam(value = "startDate", required = false) String startDate,
 		@RequestParam(value = "months", required = false) String months
 	) {
-		Long value = getTotalDownloadsOrNull(groupIds, aliases, artifactIds, startDate, months);
-		return value != null? value : "null";
+		return getTotalDownloadsOrNull(groupIds, aliases, artifactIds, startDate, months);
 	}
 
 	@GetMapping(path = "/stats/downloads-for-month", produces = "application/json")
-	public Object getDownloadsForMonth(
+	public List<Integer> getDownloadsForMonth(
 		@RequestParam(value = "groupId", required = false) Set<String> groupIds,
 		@RequestParam(value = "alias", required = false) Set<String> aliases,
 		@RequestParam(value = "artifactId", required = false) Set<String> artifactIds,
@@ -131,18 +141,18 @@ public class RestController {
 			} catch (NullPointerException exc){
 				if (nexusConnectorGroup == null) {
 					logger.warn("The Nexus connector group is disabled");
-					return "null";
+					return null;
 				}
 				throw exc;
 			}
 		} catch (Throwable exc) {
 			logger.error("Exception occurred", exc);
-			return "null";
+			return null;
 		}
 	}
 
 	@GetMapping(path = "/stats/total-downloads-badge", produces = "image/svg+xml")
-	public Object getTotalDownloadsBadge(
+	public String getTotalDownloadsBadge(
 		@RequestParam(value = "groupId", required = false) Set<String> groupIds,
 		@RequestParam(value = "alias", required = false) Set<String> aliases,
 		@RequestParam(value = "artifactId", required = false) Set<String> artifactIds,
@@ -162,15 +172,14 @@ public class RestController {
 	}
 
 	@GetMapping(path = "/stats/star-count", produces = "application/json")
-	public Object getStarCount(
+	public Integer getStarCount(
 		@RequestParam(value = "repository", required = true) String[] repositories
 	) {
-		Integer value = getStarCountOrNull(repositories);
-		return value != null? value : "null";
+		return getStarCountOrNull(repositories);
 	}
 
 	@GetMapping(path = "/stats/star-count-badge", produces = "image/svg+xml")
-	public Object getStarCountBadge(
+	public String getStarCountBadge(
 		@RequestParam(value = "repository", required = true) String[] repositories,
 		HttpServletResponse response
 	) {
