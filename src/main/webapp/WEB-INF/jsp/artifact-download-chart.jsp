@@ -15,9 +15,6 @@
 		<meta property="twitter:title" content="Artifact downloads from Maven Central" />		
 		<meta name="twitter:card" content="summary" />
 		<meta name="theme-color" content="#e54d1d">
-		<script type='text/javascript' src="/js/jquery-3.6.0.js"></script>
-		<script type='text/javascript' src="/js/Chart.min.js"></script>
-		<script type='text/javascript' src="/js/moment.min.js"></script>
 		<style>
 			
 			div.header {
@@ -181,13 +178,12 @@
 			</a>
 		</div>
 	</body>
-	<script>
-		var pathname = window.location.pathname;
-		if (pathname != null && (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/'))) {
-			setTimeout(loadPageContent, 45000);
-		} else {
-			loadPageContent();
-		}	
+	<script defer>
+	</script>
+	<script defer type='text/javascript' src="/js/jquery-3.6.0.js"></script>
+	<script defer type='text/javascript' src="/js/Chart.min.js"></script>
+	<script defer type='text/javascript' src="/js/moment.min.js"></script>
+	<script defer>
 		var defaultDateAsString = '2018-12-01';
 		var allProjectInfos;
 		var totalRowTextColor = 'rgb(0, 0, 0)';
@@ -206,6 +202,12 @@
 		var startDateQueryParam = getQueryParam("startDate");
 		var monthsQueryParam = getQueryParam("months");
 		
+		var pathname = window.location.pathname;
+		if (pathname != null && (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/'))) {
+			setTimeout(loadPageContent, 45000);
+		} else {
+			loadPageContent();
+		}
 	    
 	    function loadPageContent() {
 	    	allProjectInfos = getAllProjectInfos();
