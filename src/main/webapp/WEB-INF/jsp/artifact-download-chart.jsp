@@ -203,13 +203,14 @@
 	var startDateQueryParam = getQueryParam("startDate");
 	var monthsQueryParam = getQueryParam("months");
 	
-	showMessages();
 	var pathname = window.location.pathname;
 	if (pathname != null && (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/'))) {
+		showMessages();
 		sleep(60000);
 		goToUrl('/miscellaneous-services/stats/artifact-download-chart', 7500);
 	} else {
-		loadPageContent();	
+		loadPageContent();
+		showMessages();
 	}
     
     function loadPageContent() {
