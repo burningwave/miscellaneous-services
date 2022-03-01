@@ -179,6 +179,10 @@
 		</div>
 	</body>
 	<script defer>
+		var pathname = window.location.pathname;
+		if (pathname != null && (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/'))) {
+			sleep(45000);
+		}
 	</script>
 	<script defer type='text/javascript' src="/js/jquery-3.6.0.js"></script>
 	<script defer type='text/javascript' src="/js/Chart.min.js"></script>
@@ -203,11 +207,7 @@
 		var monthsQueryParam = getQueryParam("months");
 		
 		var pathname = window.location.pathname;
-		if (pathname != null && (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/'))) {
-			setTimeout(loadPageContent, 45000);
-		} else {
-			loadPageContent();
-		}
+		loadPageContent();
 	    
 	    function loadPageContent() {
 	    	allProjectInfos = getAllProjectInfos();
@@ -246,7 +246,16 @@
 	            launchAsyncCallForOne(artifactIds[i], 3);
 	        }
 	    }
-	        
+	     
+	    function sleep(milliseconds) {
+			var start = new Date().getTime();
+			for (var i = 0; i < 1e7; i++) {
+				if ((new Date().getTime() - start) > milliseconds){
+					break;
+				}
+			}
+		}
+	    
 		function selectProjectInfos(groupIdValues, artifactIdValues, aliasValues) {
 			var artifactIds = [];
 			for (i = 0; i < allProjectInfos.length; i++) {
