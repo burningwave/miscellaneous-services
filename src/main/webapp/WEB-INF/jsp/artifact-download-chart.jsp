@@ -183,7 +183,7 @@
 	</body>
 	<script>
 		var pathname = window.location.pathname;
-		if (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/')) {
+		if (pathname != null && (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/'))) {
 			setTimeout(function() {}, 30000);
 		}		
 		var defaultDateAsString = '2018-12-01';
