@@ -29,7 +29,9 @@
 package org.burningwave.services;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -91,19 +93,24 @@ public class Controller {
 	) throws IOException {
 		String authorizationToken = authorizationTokenAsHeader != null ? authorizationTokenAsHeader : authorizationTokenAsQueryParam;
 		String message;
-		if ((environment.getProperty("application.authorization.token.type") + " " + environment.getProperty("application.authorization.token")).equals(authorizationToken)) {
-			try {
-				herokuConnector.switchToRemoteApp();
-			} catch (NullPointerException exc) {
-				if (herokuConnector == null) {
-					logger.warn("The Heroku connector is disabled");
-				} else {
-					throw exc;
+		try {
+			if ((environment.getProperty("application.authorization.token.type") + " " + environment.getProperty("application.authorization.token")).equals(authorizationToken)) {
+				try {
+					herokuConnector.switchToRemoteApp();
+					message = "App succesfully switched";
+				} catch (NullPointerException exc) {
+					if (herokuConnector == null) {
+						logger.warn(message = "Cannot switch app: the Heroku connector is disabled");
+					} else {
+						throw exc;
+					}
 				}
+			} else {
+				logger.error(message = "Cannot switch app: unauthorized");
 			}
-			message = "App succesfully switched";
-		} else {
-			logger.error(message = "Cannot switch app: unauthorized");
+		} catch (Throwable exc) {
+			logger.error("Exception occurred", exc);
+			message = "Cannot switch app: " + exc.getMessage();
 		}
 		return view(request, model, message);
 	}
@@ -115,32 +122,46 @@ public class Controller {
 		HttpServletRequest request, Model model
 	) throws IOException {
 		String authorizationToken = authorizationTokenAsHeader != null ? authorizationTokenAsHeader : authorizationTokenAsQueryParam;
+		Collection<String> messages = new ArrayList<>();
 		String message;
-		if ((environment.getProperty("application.authorization.token.type") + " " + environment.getProperty("application.authorization.token")).equals(authorizationToken)) {
-			try {
-				nexusConnectorGroup.clearCache();
-			} catch (NullPointerException exc) {
-				if (nexusConnectorGroup == null) {
-					logger.warn("The Nexus connector group is disabled");
-				} else {
-					throw exc;
+		try {
+			if ((environment.getProperty("application.authorization.token.type") + " " + environment.getProperty("application.authorization.token")).equals(authorizationToken)) {
+				try {
+					nexusConnectorGroup.clearCache();
+				} catch (NullPointerException exc) {
+					if (nexusConnectorGroup == null) {
+						message = "The Nexus connector group is disabled";
+						logger.warn(message);
+						messages.add(message);
+					} else {
+						throw exc;
+					}
 				}
-			}
-			try {
-				gitHubConnector.clearCache();
-			} catch (NullPointerException exc) {
-				if (gitHubConnector == null) {
-					logger.warn("The GitHub connector is disabled");
-				} else {
-					throw exc;
+				try {
+					gitHubConnector.clearCache();
+				} catch (NullPointerException exc) {
+					if (gitHubConnector == null) {
+						message = "The GitHub connector is disabled";
+						logger.warn(message);
+						messages.add(message);
+					} else {
+						throw exc;
+					}
 				}
+				cache.clear();
+				if (messages.isEmpty()) {
+					messages.add("Cache successfully cleaned");
+				}
+			} else {
+				message = "Cannot clear cache: unauthorized";
+				logger.warn(message);
+				messages.add(message);
 			}
-			cache.clear();
-			message = "Cache successfully cleaned";
-		} else {
-			logger.error(message = "Cannot clear cache: unauthorized");
+		} catch (Throwable exc) {
+			logger.error("Exception occurred", exc);
+			messages.add("Exception occurred while clearing the cache: " + exc.getMessage());
 		}
-		return view(request, model, message);
+		return view(request, model, messages.toArray(new String[messages.size()]));
 	}
 
 	private String view(HttpServletRequest request, Model model, String... message) {
