@@ -184,61 +184,67 @@
 	<script>
 		var pathname = window.location.pathname;
 		if (pathname != null && (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/'))) {
-			setTimeout(function() {}, 30000);
-		}		
+			setTimeout(loadPageContent, 45000);
+		} else {
+			loadPageContent();
+		}	
 		var defaultDateAsString = '2018-12-01';
-		var allProjectInfos = getAllProjectInfos();
+		var allProjectInfos;
 		var totalRowTextColor = 'rgb(0, 0, 0)';
 		var startDate;
 		var monthlyTrendChartDatasets = [];
 	    var overallTrendChartDatasets = [];
 		var loadedArtifactIds = [];
 	    var attemptedLoadingArtifactIds = [];
-	    
+	    var months;
+	    var artifactIds;
+        var overallTrendChart;
+        var monthlyTrendChart;
 		var groupIdsQueryParam = toArray(getQueryParam("groupId"));
 		var artifactIdsQueryParam = toArray(getQueryParam("artifactId"));
 		var aliasQueryParam = toArray(getQueryParam("alias"));
-		
-		var artifactIds = selectProjectInfos(groupIdsQueryParam, artifactIdsQueryParam, aliasQueryParam);
-		buildSummary(artifactIds);
 		var startDateQueryParam = getQueryParam("startDate");
 		var monthsQueryParam = getQueryParam("months");
 		
-        startDate = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
-		var startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
-        var endDate = (monthsQueryParam != null ? startDateForComputation.add(monthsQueryParam,'month') : moment()).startOf('month').add(-1,'day');
-        var timeValues = [];
-		startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
-		var months;
-		
-        while (endDate > startDateForComputation || startDateForComputation.format('M') === endDate.format('M')) {
-            timeValues.push(startDateForComputation.format('MMM YYYY'));
-            startDateForComputation.add(1,'month');
-			months = months != null ? months + 1 : 1;
-        }
+	    
+	    function loadPageContent() {
+	    	allProjectInfos = getAllProjectInfos();
+			artifactIds = selectProjectInfos(groupIdsQueryParam, artifactIdsQueryParam, aliasQueryParam);
+			buildSummary(artifactIds);
 	
-        var overallTrendChart = null;
-        var monthlyTrendChart = null;
-        var showOverallTrendChart = getQueryParam("show-overall-trend-chart");
-        if (showOverallTrendChart == null || showOverallTrendChart.toUpperCase() != "false".toUpperCase()) {
-            overallTrendChart = createChart('overallTrendChart', 'Overall trend', timeValues, overallTrendChartDatasets);
-        } else {
-            document.getElementById("overallTrendChartDiv").style.display = "none";
-        }
-        var showMonthlyTrendChart = getQueryParam("show-monthly-trend-chart");
-        if (showMonthlyTrendChart == null || showMonthlyTrendChart.toUpperCase() != "false".toUpperCase()) {
-            monthlyTrendChart = createChart('monthlyTrendChart', 'Monthly trend', timeValues, monthlyTrendChartDatasets);
-        } else {
-            document.getElementById("monthlyTrendChartDiv").style.display = "none";
-        }
-        if (overallTrendChart == null || monthlyTrendChart == null) {
-            document.getElementById("separatorDivOne").style.display = "none";
-        }
+	        startDate = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
+			var startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
+	        var endDate = (monthsQueryParam != null ? startDateForComputation.add(monthsQueryParam,'month') : moment()).startOf('month').add(-1,'day');
+	        var timeValues = [];
+			startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);		
+			
+	        while (endDate > startDateForComputation || startDateForComputation.format('M') === endDate.format('M')) {
+	            timeValues.push(startDateForComputation.format('MMM YYYY'));
+	            startDateForComputation.add(1,'month');
+				months = months != null ? months + 1 : 1;
+	        }
 
-        for (i = 0; i < artifactIds.length; i++) {
-            launchAsyncCallForOne(artifactIds[i], 3);
-        }
-		
+	        var showOverallTrendChart = getQueryParam("show-overall-trend-chart");
+	        if (showOverallTrendChart == null || showOverallTrendChart.toUpperCase() != "false".toUpperCase()) {
+	            overallTrendChart = createChart('overallTrendChart', 'Overall trend', timeValues, overallTrendChartDatasets);
+	        } else {
+	            document.getElementById("overallTrendChartDiv").style.display = "none";
+	        }
+	        var showMonthlyTrendChart = getQueryParam("show-monthly-trend-chart");
+	        if (showMonthlyTrendChart == null || showMonthlyTrendChart.toUpperCase() != "false".toUpperCase()) {
+	            monthlyTrendChart = createChart('monthlyTrendChart', 'Monthly trend', timeValues, monthlyTrendChartDatasets);
+	        } else {
+	            document.getElementById("monthlyTrendChartDiv").style.display = "none";
+	        }
+	        if (overallTrendChart == null || monthlyTrendChart == null) {
+	            document.getElementById("separatorDivOne").style.display = "none";
+	        }
+	
+	        for (i = 0; i < artifactIds.length; i++) {
+	            launchAsyncCallForOne(artifactIds[i], 3);
+	        }
+	    }
+	        
 		function selectProjectInfos(groupIdValues, artifactIdValues, aliasValues) {
 			var artifactIds = [];
 			for (i = 0; i < allProjectInfos.length; i++) {
@@ -672,9 +678,7 @@
 		function goToUrl(url) {
 			overlayOn();
 			window.location.href = url;
-			setTimeout(function () {
-		    	overlayOff();
-		    }, 7500);
+			setTimeout(overlayOff, 7500);
 			return false;
 		}
 		
