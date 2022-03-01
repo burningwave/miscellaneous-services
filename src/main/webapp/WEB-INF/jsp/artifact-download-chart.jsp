@@ -189,7 +189,7 @@
 	
 		var pathname = window.location.pathname;
 		if (pathname != null && (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/'))) {
-			sleep(45000);
+			sleep(90000);
 		}
 
 	</script>
