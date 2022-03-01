@@ -206,8 +206,8 @@
 	showMessages();
 	var pathname = window.location.pathname;
 	if (pathname != null && (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/'))) {
-		sleep(45000);
-		goToUrl('/miscellaneous-services/', 7500);
+		sleep(60000);
+		goToUrl('/miscellaneous-services/stats/artifact-download-chart', 7500);
 	} else {
 		loadPageContent();	
 	}
