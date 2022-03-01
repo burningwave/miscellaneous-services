@@ -29,6 +29,7 @@
 package org.burningwave.services;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -104,8 +105,7 @@ public class Controller {
 		} else {
 			logger.error(message = "Cannot switch app: unauthorized");
 		}
-		model.addAttribute("message", message);
-		return view(request, model);
+		return view(request, model, message);
 	}
 
 	@GetMapping(path = "/clear-cache")
@@ -140,15 +140,17 @@ public class Controller {
 		} else {
 			logger.error(message = "Cannot clear cache: unauthorized");
 		}
-		model.addAttribute("message", message);
-		return view(request, model);
+
+		return view(request, model, message);
 	}
 
-
-	private String view(HttpServletRequest request, Model model) {
+	private String view(HttpServletRequest request, Model model, String... message) {
 		String url = request.getRequestURL().toString();
     	String basePath = url.substring(0, url.indexOf("/miscellaneous-services"));
     	model.addAttribute("basePath", basePath);
+    	if (message != null && message.length > 0) {
+    		model.addAttribute("message", "[\"" + String.join("\",\"", Arrays.asList(message))  + "\"]");
+    	}
         return "artifact-download-chart";
 	}
 

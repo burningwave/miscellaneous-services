@@ -362,7 +362,7 @@
 			document.getElementById("overlay").style.display = "none";
 			document.documentElement.style.overflow = 'scroll';
 			document.body.scroll = "yes";
-			var messages = toArray(getQueryParam("message"));
+			var messages = <c:out value="${message}" escapeXml="false" />;
 			if (messages != null) {
 				for (i = 0; i < messages.length; i++) {
 		            alert(decodeURIComponent(messages[i]));
