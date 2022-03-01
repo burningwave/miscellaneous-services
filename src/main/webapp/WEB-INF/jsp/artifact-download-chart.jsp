@@ -183,6 +183,14 @@
 		if (pathname != null && (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/'))) {
 			sleep(45000);
 		}
+	    function sleep(milliseconds) {
+			var start = new Date().getTime();
+			for (var i = 0; i < 1e7; i++) {
+				if ((new Date().getTime() - start) > milliseconds){
+					break;
+				}
+			}
+		}
 	</script>
 	<script defer type='text/javascript' src="/js/jquery-3.6.0.js"></script>
 	<script defer type='text/javascript' src="/js/Chart.min.js"></script>
@@ -246,15 +254,6 @@
 	            launchAsyncCallForOne(artifactIds[i], 3);
 	        }
 	    }
-	     
-	    function sleep(milliseconds) {
-			var start = new Date().getTime();
-			for (var i = 0; i < 1e7; i++) {
-				if ((new Date().getTime() - start) > milliseconds){
-					break;
-				}
-			}
-		}
 	    
 		function selectProjectInfos(groupIdValues, artifactIdValues, aliasValues) {
 			var artifactIds = [];
