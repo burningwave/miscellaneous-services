@@ -150,6 +150,8 @@ public class Controller {
     	model.addAttribute("basePath", basePath);
     	if (message != null && message.length > 0) {
     		model.addAttribute("message", "[\"" + String.join("\",\"", Arrays.asList(message))  + "\"]");
+    	} else {
+    		model.addAttribute("message", "null");
     	}
         return "artifact-download-chart";
 	}
