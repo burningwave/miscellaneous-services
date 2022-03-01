@@ -206,7 +206,7 @@
 	showMessages();
 	var pathname = window.location.pathname;
 	if (pathname != null && (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/'))) {
-		goToUrl('/miscellaneous-services/');
+		goToUrl('/miscellaneous-services/', 45000);
 	} else {
 		loadPageContent();	
 	}
