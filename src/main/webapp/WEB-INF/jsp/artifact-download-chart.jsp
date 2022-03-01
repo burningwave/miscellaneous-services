@@ -1,5 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<c:if test="${empty message}">
+    <c:set var = "message" scope = "page" value = "null"/>
+</c:if>
 <html>
 	<head>
 		<link rel="shortcut icon" type="image/png" href="/image/favicon.png">
@@ -179,6 +182,10 @@
 		</div>
 	</body>
 	<script>
+		var pathname = window.location.pathname;
+		if (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/')) {
+			setTimeout(function() {}, 30000);
+		}		
 		var defaultDateAsString = '2018-12-01';
 		var allProjectInfos = getAllProjectInfos();
 		var totalRowTextColor = 'rgb(0, 0, 0)';
@@ -188,54 +195,49 @@
 		var loadedArtifactIds = [];
 	    var attemptedLoadingArtifactIds = [];
 	    
-		try {
-			var groupIdsQueryParam = toArray(getQueryParam("groupId"));
-			var artifactIdsQueryParam = toArray(getQueryParam("artifactId"));
-			var aliasQueryParam = toArray(getQueryParam("alias"));
-			
-			var artifactIds = selectProjectInfos(groupIdsQueryParam, artifactIdsQueryParam, aliasQueryParam);
-			buildSummary(artifactIds);
-			var startDateQueryParam = getQueryParam("startDate");
-			var monthsQueryParam = getQueryParam("months");
-			
-	        startDate = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
-			var startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
-	        var endDate = (monthsQueryParam != null ? startDateForComputation.add(monthsQueryParam,'month') : moment()).startOf('month').add(-1,'day');
-	        var timeValues = [];
-			startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
-			var months;
-			
-	        while (endDate > startDateForComputation || startDateForComputation.format('M') === endDate.format('M')) {
-	            timeValues.push(startDateForComputation.format('MMM YYYY'));
-	            startDateForComputation.add(1,'month');
-				months = months != null ? months + 1 : 1;
-	        }
+		var groupIdsQueryParam = toArray(getQueryParam("groupId"));
+		var artifactIdsQueryParam = toArray(getQueryParam("artifactId"));
+		var aliasQueryParam = toArray(getQueryParam("alias"));
 		
-	        var overallTrendChart = null;
-	        var monthlyTrendChart = null;
-	        var showOverallTrendChart = getQueryParam("show-overall-trend-chart");
-	        if (showOverallTrendChart == null || showOverallTrendChart.toUpperCase() != "false".toUpperCase()) {
-	            overallTrendChart = createChart('overallTrendChart', 'Overall trend', timeValues, overallTrendChartDatasets);
-	        } else {
-	            document.getElementById("overallTrendChartDiv").style.display = "none";
-	        }
-	        var showMonthlyTrendChart = getQueryParam("show-monthly-trend-chart");
-	        if (showMonthlyTrendChart == null || showMonthlyTrendChart.toUpperCase() != "false".toUpperCase()) {
-	            monthlyTrendChart = createChart('monthlyTrendChart', 'Monthly trend', timeValues, monthlyTrendChartDatasets);
-	        } else {
-	            document.getElementById("monthlyTrendChartDiv").style.display = "none";
-	        }
-	        if (overallTrendChart == null || monthlyTrendChart == null) {
-	            document.getElementById("separatorDivOne").style.display = "none";
-	        }
+		var artifactIds = selectProjectInfos(groupIdsQueryParam, artifactIdsQueryParam, aliasQueryParam);
+		buildSummary(artifactIds);
+		var startDateQueryParam = getQueryParam("startDate");
+		var monthsQueryParam = getQueryParam("months");
+		
+        startDate = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
+		var startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
+        var endDate = (monthsQueryParam != null ? startDateForComputation.add(monthsQueryParam,'month') : moment()).startOf('month').add(-1,'day');
+        var timeValues = [];
+		startDateForComputation = startDateQueryParam != null ? moment(startDateQueryParam + '-01') : moment(defaultDateAsString);
+		var months;
+		
+        while (endDate > startDateForComputation || startDateForComputation.format('M') === endDate.format('M')) {
+            timeValues.push(startDateForComputation.format('MMM YYYY'));
+            startDateForComputation.add(1,'month');
+			months = months != null ? months + 1 : 1;
+        }
 	
-	        for (i = 0; i < artifactIds.length; i++) {
-	            launchAsyncCallForOne(artifactIds[i], 3);
-	        }
-	    } catch (error) {
-	        location.reload();
-	    }
-	
+        var overallTrendChart = null;
+        var monthlyTrendChart = null;
+        var showOverallTrendChart = getQueryParam("show-overall-trend-chart");
+        if (showOverallTrendChart == null || showOverallTrendChart.toUpperCase() != "false".toUpperCase()) {
+            overallTrendChart = createChart('overallTrendChart', 'Overall trend', timeValues, overallTrendChartDatasets);
+        } else {
+            document.getElementById("overallTrendChartDiv").style.display = "none";
+        }
+        var showMonthlyTrendChart = getQueryParam("show-monthly-trend-chart");
+        if (showMonthlyTrendChart == null || showMonthlyTrendChart.toUpperCase() != "false".toUpperCase()) {
+            monthlyTrendChart = createChart('monthlyTrendChart', 'Monthly trend', timeValues, monthlyTrendChartDatasets);
+        } else {
+            document.getElementById("monthlyTrendChartDiv").style.display = "none";
+        }
+        if (overallTrendChart == null || monthlyTrendChart == null) {
+            document.getElementById("separatorDivOne").style.display = "none";
+        }
+
+        for (i = 0; i < artifactIds.length; i++) {
+            launchAsyncCallForOne(artifactIds[i], 3);
+        }
 		
 		function selectProjectInfos(groupIdValues, artifactIdValues, aliasValues) {
 			var artifactIds = [];
