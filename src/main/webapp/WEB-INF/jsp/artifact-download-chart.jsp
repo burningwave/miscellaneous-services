@@ -206,7 +206,8 @@
 	showMessages();
 	var pathname = window.location.pathname;
 	if (pathname != null && (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/'))) {
-		goToUrl('/miscellaneous-services/', 45000);
+		sleep(45000);
+		goToUrl('/miscellaneous-services/', 7500);
 	} else {
 		loadPageContent();	
 	}
@@ -264,6 +265,13 @@
 		return artifactIds;	
 	}
 	
+	function sleep(milliseconds) {
+		var start = new Date().getTime();
+		var end=0;
+		while( (end-start) < milliseconds){
+			end = new Date().getTime();
+		}
+	}
 	
 	function containsArtifactId(groupIdValues, artifactIdValues, artifactId) {
 		for (j = 0; j < artifactIdValues.length; j++) {
