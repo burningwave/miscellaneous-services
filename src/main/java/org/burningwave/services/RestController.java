@@ -65,6 +65,7 @@ import io.swagger.v3.oas.annotations.info.Info;
 public class RestController {
 	private final static org.slf4j.Logger logger;
 	private Environment environment;
+	private HerokuConnector herokuConnector;
 	private NexusConnector.Group nexusConnectorGroup;
 	private GitHubConnector gitHubConnector;
 	private SimpleCache cache;
@@ -78,6 +79,7 @@ public class RestController {
 		Environment environment,
 		SimpleCache cache,
 		Badge badge,
+		@Nullable HerokuConnector herokuConnector,
 		@Nullable NexusConnector.Group nexusConnectorGroup,
 		@Nullable GitHubConnector gitHubConnector
 	) throws InitializeException {
@@ -87,6 +89,7 @@ public class RestController {
 		this.environment = environment;
 		this.cache = cache;
 		this.badge = badge;
+		this.herokuConnector = herokuConnector;
 		this.nexusConnectorGroup = nexusConnectorGroup;
 		this.gitHubConnector = gitHubConnector;
 	}
@@ -224,6 +227,32 @@ public class RestController {
 			message = "Cache successfully cleaned";
 		} else {
 			logger.error(message = "Cannot clear cache: unauthorized");
+		}
+		response.sendRedirect("stats/artifact-download-chart?message=" + message);
+	}
+
+	@GetMapping(path = "/switch-to-remote-app")
+	public void switchToRemoteApp(
+		@RequestParam(value = "Authorization", required = false) String authorizationTokenAsQueryParam,
+		@RequestHeader(value = "Authorization", required = false) String authorizationTokenAsHeader,
+		HttpServletRequest request,
+		HttpServletResponse response
+	) throws IOException {
+		String authorizationToken = authorizationTokenAsHeader != null ? authorizationTokenAsHeader : authorizationTokenAsQueryParam;
+		String message;
+		if ((environment.getProperty("application.authorization.token.type") + " " + environment.getProperty("application.authorization.token")).equals(authorizationToken)) {
+			try {
+				herokuConnector.switchToRemoteApp();
+			} catch (NullPointerException exc) {
+				if (herokuConnector == null) {
+					logger.warn("The Heroku connector is disabled");
+				} else {
+					throw exc;
+				}
+			}
+			message = "App succesfully switched";
+		} else {
+			logger.error(message = "Cannot switch app: unauthorized");
 		}
 		response.sendRedirect("stats/artifact-download-chart?message=" + message);
 	}
