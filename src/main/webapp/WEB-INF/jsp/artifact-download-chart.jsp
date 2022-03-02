@@ -395,6 +395,7 @@
 			for (i = 0; i < messages.length; i++) {
 	            alert(decodeURIComponent(messages[i]));
 	        }
+			messages = null;
 		}
 	}
 	
