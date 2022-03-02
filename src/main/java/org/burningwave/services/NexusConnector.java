@@ -607,6 +607,7 @@ public class NexusConnector {
 
 	public static class Group {
 		private Collection<NexusConnector> nexusConnectors;
+		private Configuration configuration;
 
 		public Group(SimpleCache cache, RestTemplate restTemplate, Utility utility, Map<String, Object> configMap) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JAXBException, ParseException, IOException {
 
@@ -654,6 +655,7 @@ public class NexusConnector {
 				configuration.getConnector().add(nexusConnectorConfig);
 			}
 			nexusConnectors = ConcurrentHashMap.newKeySet();
+			this.configuration = configuration;
 			for (org.burningwave.services.NexusConnector.Configuration nexusConfiguration : configuration.getConnector()) {
 				if (!nexusConfiguration.getEnabled()) {
 					continue;
@@ -716,6 +718,9 @@ public class NexusConnector {
 			return output;
 		}
 
+		Configuration getConfiguration() {
+			return configuration;
+		}
 
 		private GetStatsInput toInput(NexusConnector nexusConnector, Project projectInfo, String artifactId, Date startDate, Integer months) {
 			startDate = startDate != null ? startDate : projectInfo.getStartDate().getTime();

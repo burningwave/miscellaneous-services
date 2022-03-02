@@ -186,7 +186,7 @@
 <script src="/js/moment.min.js"></script>
 <script>
 	
-	var defaultDateAsString = '2018-12-01';
+	var defaultDateAsString = '<c:out value="${startDate}"/>-01';
 	var allProjectInfos;
 	var totalRowTextColor = 'rgb(0, 0, 0)';
 	var startDate;
@@ -205,7 +205,7 @@
 	var startDateQueryParam = getQueryParam("startDate");
 	var monthsQueryParam = getQueryParam("months");
 	
-	var pathname = window.location.pathname;
+	//var pathname = window.location.pathname;
 	if (messagesContains('<%= org.burningwave.services.Controller.SWITCH_TO_REMOTE_APP_SUCCESSFUL_MESSAGE %>')) {
 		showMessages();
 		sleep(60000);

@@ -29,6 +29,7 @@
 package org.burningwave.services;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -171,6 +172,7 @@ public class Controller {
 		String url = request.getRequestURL().toString();
     	String basePath = url.substring(0, url.indexOf("/miscellaneous-services"));
     	model.addAttribute("basePath", basePath);
+    	model.addAttribute("startDate", new SimpleDateFormat("yyyy-MM").format(nexusConnectorGroup.getConfiguration().getDefaultProjectConfig().getStartDate().getTime()));
     	if (message != null && message.length > 0) {
     		model.addAttribute("message", "[\"" + String.join("\",\"", Arrays.asList(message))  + "\"]");
     	}
