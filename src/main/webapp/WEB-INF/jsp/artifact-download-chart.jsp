@@ -181,10 +181,11 @@
 
 </html>
 
-<script type='text/javascript' src="/js/jquery-3.6.0.js"></script>
-<script type='text/javascript' src="/js/Chart.min.js"></script>
-<script type='text/javascript' src="/js/moment.min.js"></script>
-<script >
+<script src="/js/jquery-3.6.0.js"></script>
+<script src="/js/Chart.min.js"></script>
+<script src="/js/moment.min.js"></script>
+<script>
+	
 	var defaultDateAsString = '2018-12-01';
 	var allProjectInfos;
 	var totalRowTextColor = 'rgb(0, 0, 0)';
@@ -386,9 +387,11 @@
 		document.body.scroll = "yes";	
 	}
 	
+	
 	function messagesContains(message) {
 		return messages != null && messages.includes(message);
 	}
+	
 	
 	function showMessages() {
 		if (messages != null) {
@@ -520,6 +523,7 @@
 		return artifactInfos[2];
 	}
 	
+	
 	function getSite(artifactId) {
 		var artifactInfos;
 		for (i = 0; i < allProjectInfos.length; i++) {
@@ -555,6 +559,7 @@
         });
     }
 
+    
 	function getAllProjectInfosFromRemote() {
         var url = '/miscellaneous-services/nexus-connector/project-info';
         return jQuery.ajax({
@@ -678,6 +683,7 @@
         };
     }
 
+    
     function displayError(id) {
         var errorMessage = "Could not retrieve download count from Maven Central: try again later or tomorrow";
         var node = document.getElementById(id + "Downloads");
