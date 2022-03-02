@@ -43,7 +43,7 @@
 				margin-right: 3px;
 				background:  #ffffff;
 				text-align:right;
-				color: #e54d1d;
+				color: #000000;
 			}
 			
 			@media screen and (min-width: 63px) {
@@ -174,7 +174,7 @@
 		<div class="footer">
 			Powered by
 			<a href="#" onclick="goToUrl('https://burningwave.github.io/miscellaneous-services/', 7500);return false;">
-				<span style="font-family: 'Aldo Pro Book'; font-size: 23px; font-style: italic; font-weight: bold;">Burningwave</span>
+				<span style="font-family: 'Aldo Pro Book'; font-size: 23px; font-style: italic; font-weight: bold; color: #e54d1d;">Burningwave</span>
 			</a>
 		</div>
 	</body>
