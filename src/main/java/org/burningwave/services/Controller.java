@@ -51,6 +51,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @CrossOrigin
 public class Controller {
 	private final static org.slf4j.Logger logger;
+	public final static String SWITCH_TO_REMOTE_APP_SUCCESSFUL_MESSAGE;
 
 	private GitHubConnector gitHubConnector;
 	private HerokuConnector herokuConnector;
@@ -59,6 +60,7 @@ public class Controller {
 	private SimpleCache cache;
 
     static {
+    	SWITCH_TO_REMOTE_APP_SUCCESSFUL_MESSAGE = "App succesfully switched";
     	logger = org.slf4j.LoggerFactory.getLogger(Controller.class);
     }
 
@@ -97,7 +99,7 @@ public class Controller {
 			if ((environment.getProperty("application.authorization.token.type") + " " + environment.getProperty("application.authorization.token")).equals(authorizationToken)) {
 				try {
 					herokuConnector.switchToRemoteApp();
-					message = "App succesfully switched";
+					message = SWITCH_TO_REMOTE_APP_SUCCESSFUL_MESSAGE;
 				} catch (NullPointerException exc) {
 					if (herokuConnector == null) {
 						logger.warn(message = "Cannot switch app: the Heroku connector is disabled");
@@ -106,7 +108,8 @@ public class Controller {
 					}
 				}
 			} else {
-				logger.error(message = "Cannot switch app: unauthorized");
+				message = "Cannot switch app: unauthorized";
+				logger.error(message);
 			}
 		} catch (Throwable exc) {
 			logger.error("Exception occurred", exc);

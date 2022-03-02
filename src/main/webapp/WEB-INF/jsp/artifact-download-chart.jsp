@@ -197,6 +197,7 @@
     var artifactIds;
     var overallTrendChart;
     var monthlyTrendChart;
+    var messages = <c:out value="${message}" escapeXml="false" />;
 	var groupIdsQueryParam = toArray(getQueryParam("groupId"));
 	var artifactIdsQueryParam = toArray(getQueryParam("artifactId"));
 	var aliasQueryParam = toArray(getQueryParam("alias"));
@@ -204,7 +205,7 @@
 	var monthsQueryParam = getQueryParam("months");
 	
 	var pathname = window.location.pathname;
-	if (pathname != null && (pathname.endsWith('switch-to-remote-app') || pathname.endsWith('switch-to-remote-app/'))) {
+	if (messagesContains('<%= org.burningwave.services.Controller.SWITCH_TO_REMOTE_APP_SUCCESSFUL_MESSAGE %>')) {
 		showMessages();
 		sleep(60000);
 		goToUrl('/miscellaneous-services/stats/artifact-download-chart', 7500);
@@ -385,8 +386,11 @@
 		document.body.scroll = "yes";	
 	}
 	
+	function messagesContains(message) {
+		return messages != null && messages.includes(message);
+	}
+	
 	function showMessages() {
-		var messages = <c:out value="${message}" escapeXml="false" />;
 		if (messages != null) {
 			for (i = 0; i < messages.length; i++) {
 	            alert(decodeURIComponent(messages[i]));
