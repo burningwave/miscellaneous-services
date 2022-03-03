@@ -58,12 +58,13 @@ heroku-connector.remote.authorization.token: ${HEROKU_CONNECTOR_REMOTE_AUTHORIZA
 cache.type: ${CACHE_TYPE:File system based}
 cache.base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
 
-#To disable this set the environment property SCHEDULED_OPERATIONS_PING_CRON to - 
-scheduled-operations.ping.cron: ${SCHEDULED_OPERATIONS_PING_CRON:0 0/25 * * * *}
-scheduled-operations.ping.zone: ${SCHEDULED_OPERATIONS_PING_ZONE:UTC}
-
-scheduled-operations.switch-to-remote-app.cron: ${SCHEDULED_OPERATIONS_SWITCH_TO_REMOTE_APP_CRON:-}
-scheduled-operations.switch-to-remote-app.zone: ${SCHEDULED_OPERATIONS_SWITCH_TO_REMOTE_APP_ZONE:UTC}
+scheduled-operations:
+   - cron: ${SCHEDULED_OPERATIONS_PING_CRON:0 0/25 * * * *}
+     zone: ${SCHEDULED_OPERATIONS_PING_ZONE:UTC}
+     executable: applicationSelfConnector.ping
+   - cron: ${SCHEDULED_OPERATIONS_SWITCH_TO_REMOTE_APP_CRON:-}
+     zone: ${SCHEDULED_OPERATIONS_SWITCH_TO_REMOTE_APP_ZONE:UTC}
+     executable: herokuConnector.switchToRemoteApp
 
 burningwave.core.static-component-container.managed-logger.repository: 'org.burningwave.core.SLF4JManagedLoggerRepository'
 burningwave.core.static-component-container.modules.export-all-to-all: false

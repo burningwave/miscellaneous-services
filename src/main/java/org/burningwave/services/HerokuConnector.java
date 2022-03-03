@@ -42,8 +42,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 public class HerokuConnector {
-
 	private final static org.slf4j.Logger logger;
+
 	private HttpHeaders appHttpHeaders;
 	private HttpHeaders remoteAppHttpHeaders;
 	private Function<String, String> uriSupplier;

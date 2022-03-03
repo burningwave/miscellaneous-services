@@ -54,7 +54,7 @@ import io.swagger.v3.oas.annotations.info.Info;
 @OpenAPIDefinition(
     info = @Info(
         title="Miscellaneous services",
-        version = "9.0.0"
+        version = "10.0.0"
     )
 )
 public class RestController {

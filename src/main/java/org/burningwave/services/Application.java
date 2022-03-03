@@ -28,13 +28,19 @@
  */
 package org.burningwave.services;
 
+import static org.burningwave.core.assembler.StaticComponentContainer.Methods;
+
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TimeZone;
+import java.util.concurrent.ScheduledFuture;
 import java.util.function.Supplier;
 
 import javax.servlet.http.HttpServletRequest;
@@ -75,10 +81,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -92,14 +98,19 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @EnableScheduling
 @EnableAsync
 public class Application extends SpringBootServletInitializer {
+	private final static org.slf4j.Logger logger;
 
 	final static String SCHEME_AND_HOST_NAME_CACHE_KEY = "SchemeAndHostname";
-	private static ApplicationContext applicationContext;
 	String schemeAndHostName;
 
+    static {
+    	logger = org.slf4j.LoggerFactory.getLogger(Application.class);
+    }
+
 	public static void main(String[] args) throws IOException {
-		applicationContext = SpringApplication.run(Application.class, args);
+		SpringApplication.run(Application.class, args);
 	}
+
 
 	@Bean("badge")
 	public Badge badge(
@@ -108,10 +119,12 @@ public class Application extends SpringBootServletInitializer {
 		return new Badge(utility);
 	}
 
+
 	@Bean("utility")
 	public Utility utility() {
 		return new Utility();
 	}
+
 
 	@Bean("cacheConfig")
 	@ConfigurationProperties("cache")
@@ -119,17 +132,20 @@ public class Application extends SpringBootServletInitializer {
 		return new LinkedHashMap<>();
 	}
 
+
 	@Bean("burningwave.core.staticComponentContainer.config")
 	@ConfigurationProperties("burningwave.core.static-component-container")
 	public Map<String, String> staticComponentContainerConfig(){
 		return new LinkedHashMap<>();
 	}
 
+
 	@Bean
 	public Class<StaticComponentContainer> staticComponentContainer(@Qualifier("burningwave.core.staticComponentContainer.config") Map<String, String> configMap) {
 		StaticComponentContainer.Configuration.Default.add(configMap);
 		return StaticComponentContainer.class;
 	}
+
 
 	@Bean("cache")
 	@ConditionalOnExpression(value = "'${cache.type}'.trim().equalsIgnoreCase('File system based')")
@@ -141,11 +157,13 @@ public class Application extends SpringBootServletInitializer {
 		return new FSBasedCache(configuration);
 	}
 
+
 	@Bean("nexusConnectorGroup.config")
 	@ConfigurationProperties("nexus-connector.group")
 	public Map<String, String> nexusConnectorConfig(){
 		return new LinkedHashMap<>();
 	}
+
 
 	@Bean("nexusConnectorGroup")
 	@ConditionalOnProperty(prefix = "nexus-connector.group", name = "enabled", havingValue = "true")
@@ -160,11 +178,13 @@ public class Application extends SpringBootServletInitializer {
 		return new NexusConnector.Group(cache, restTemplate, utility, configuration);
 	}
 
+
 	@Bean("gitHubConnector.config")
 	@ConfigurationProperties("github-connector")
 	public Map<String, String> gitHubConnectorConfig(){
 		return new LinkedHashMap<>();
 	}
+
 
 	@Bean("gitHubConnector")
 	@ConditionalOnProperty(prefix = "github-connector", name = "enabled", havingValue = "true")
@@ -178,11 +198,13 @@ public class Application extends SpringBootServletInitializer {
 		return gitHubConnector;
 	}
 
+
 	@Bean("herokuConnector.config")
 	@ConfigurationProperties("heroku-connector")
 	public Map<String, String> herokuConnectorConfig(){
 		return new LinkedHashMap<>();
 	}
+
 
 	@Bean("herokuConnector")
 	@ConditionalOnExpression(value = "'${heroku-connector.authorization.token}' != null && '${heroku-connector.remote.authorization.token}' != null")
@@ -193,14 +215,15 @@ public class Application extends SpringBootServletInitializer {
 		return connector;
 	}
 
+
 	@Bean("applicationSelfConnector.config")
 	@ConfigurationProperties("application.self-connector")
 	public Map<String, String> applicationSelfConnectorConfig(){
 		return new LinkedHashMap<>();
 	}
 
+
 	@Bean("applicationSelfConnector")
-	@ConditionalOnExpression(value = "!'${scheduled-operations.ping.cron}'.trim().equals('-')")
 	public SelfConnector applicationSelfConnector(
 		Application application,
 		@Qualifier("cache") SimpleCache cache,
@@ -211,6 +234,7 @@ public class Application extends SpringBootServletInitializer {
 		return new SelfConnector(application, cache, configuration);
 	}
 
+
 	@Bean("restTemplate")
 	public RestTemplate restTemplate() {
         RestTemplate restTemplate = new RestTemplate();
@@ -220,27 +244,44 @@ public class Application extends SpringBootServletInitializer {
         return restTemplate;
 	}
 
+
 	@Bean
 	public WebMvcConfigurer webMvcConfigurer(Application application) {
 		return new WebMvcConfigurer(application);
 	}
 
-	@Scheduled(
-		cron = "${scheduled-operations.ping.cron}",
-		zone = "${scheduled-operations.ping.zone}"
-	)
-	@Async
-	public void ping() throws Throwable {
-		applicationContext.getBean(SelfConnector.class).ping();
+
+	@Bean("scheduledOperations.config")
+	@ConfigurationProperties("scheduled-operations")
+	public Map<String, Map<String, String>> scheduledOperationsConfig(){
+		return new LinkedHashMap<>();
 	}
 
-	@Scheduled(
-		cron = "${scheduled-operations.switch-to-remote-app.cron}",
-		zone = "${scheduled-operations.switch-to-remote-app.zone}"
-	)
-	@Async
-	public void switchToRemoteApp() throws Throwable {
-		applicationContext.getBean(HerokuConnector.class).switchToRemoteApp();
+
+	@Bean("scheduledOperations")
+	public Collection<ScheduledFuture<?>> scheduledOperations(
+		ApplicationContext applicationContext,
+		TaskScheduler taskScheduler,
+		@Qualifier("scheduledOperations.config")Map<String, Map<String, String>> config
+	) {
+		Collection<ScheduledFuture<?>> scheduledOperations = new ArrayList<>();
+		for (Map<String, String> jobConfig : config.values()) {
+			if (!jobConfig.get("cron").trim().equals("-")) {
+				try {
+					String[] targetAndMethod = jobConfig.get("executable").split("\\.");
+					Object target = applicationContext.getBean(targetAndMethod[0]);
+					scheduledOperations.add(
+						taskScheduler.schedule(
+							() -> Methods.invokeDirect(target, targetAndMethod[1]),
+							new CronTrigger(jobConfig.get("cron"), TimeZone.getTimeZone(jobConfig.get("zone")))
+						)
+					);
+				} catch (Throwable exc) {
+					logger.warn("Could not schedule operation {}: {}", jobConfig.get("executable"), exc.getMessage());
+				}
+			}
+		}
+		return scheduledOperations;
 	}
 
 	public static class WebMvcConfigurer implements org.springframework.web.servlet.config.annotation.WebMvcConfigurer {
@@ -295,7 +336,7 @@ public class Application extends SpringBootServletInitializer {
 	        };
 	    }
 
-	    public void ping() throws Throwable {
+	    public void ping() {
 			String url = getStatsTotalDownloadsUriComponentsBuilder.get();
 			if (url != null) {
 				restTemplate.exchange(
