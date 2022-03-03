@@ -280,7 +280,7 @@ public class Application extends SpringBootServletInitializer {
 					logger.warn("Could not schedule operation {}: {}", jobConfig.get("executable"), exc.getMessage());
 				}
 			} else {
-				logger.info("Schedule operation {} is disabled", jobConfig.get("executable"));
+				logger.info("Scheduled operation {} is disabled", jobConfig.get("executable"));
 			}
 		}
 		return scheduledOperations;
