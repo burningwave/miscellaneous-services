@@ -211,6 +211,15 @@ public class Application extends SpringBootServletInitializer {
 		return new SelfConnector(application, cache, configuration);
 	}
 
+	@Bean("restTemplate")
+	public RestTemplate restTemplate() {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpClient httpClient = HttpClientBuilder.create().build();
+        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
+        restTemplate.setRequestFactory(requestFactory);
+        return restTemplate;
+	}
+
 	@Bean
 	public WebMvcConfigurer webMvcConfigurer(Application application) {
 		return new WebMvcConfigurer(application);
@@ -232,19 +241,6 @@ public class Application extends SpringBootServletInitializer {
 	@Async
 	public void switchToRemoteApp() throws Throwable {
 		applicationContext.getBean(HerokuConnector.class).switchToRemoteApp();
-	}
-
-	@Bean("restTemplate")
-	public RestTemplate restTemplate() {
-        RestTemplate restTemplate = new RestTemplate();
-        HttpClient httpClient = HttpClientBuilder.create().build();
-        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
-        restTemplate.setRequestFactory(requestFactory);
-        return restTemplate;
-	}
-
-	public String getURL(String relativePath) {
-		return Optional.ofNullable(schemeAndHostName).map(url -> url + relativePath).orElseGet(() -> null);
 	}
 
 	public static class WebMvcConfigurer implements org.springframework.web.servlet.config.annotation.WebMvcConfigurer {
@@ -341,6 +337,10 @@ public class Application extends SpringBootServletInitializer {
 
 		}
 
+	}
+
+	public String getURL(String relativePath) {
+		return Optional.ofNullable(schemeAndHostName).map(url -> url + relativePath).orElseGet(() -> null);
 	}
 
 }
