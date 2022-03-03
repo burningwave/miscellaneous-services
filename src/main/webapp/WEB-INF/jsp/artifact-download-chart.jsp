@@ -64,7 +64,7 @@
 			    }
 			}
 			
-			@media screen and (min-width: 576px) {
+			@media screen and (min-width: 593px) {
 			    div.header {
 			    	height: 60px;
 			    }
