@@ -99,8 +99,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @EnableAsync
 public class Application extends SpringBootServletInitializer {
 	private final static org.slf4j.Logger logger;
-
-	final static String SCHEME_AND_HOST_NAME_CACHE_KEY = "SchemeAndHostname";
 	String schemeAndHostName;
 
     static {
