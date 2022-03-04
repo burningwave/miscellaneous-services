@@ -257,6 +257,7 @@
         }
     }
     
+    
 	function selectProjectInfos(groupIdValues, artifactIdValues, aliasValues) {
 		var artifactIds = [];
 		for (i = 0; i < allProjectInfos.length; i++) {
@@ -678,6 +679,7 @@
 		}
 	}
     
+	
     function displayError(id) {
         var errorMessage = "Could not retrieve download count from Maven Central: try again later or tomorrow";
         var node;
