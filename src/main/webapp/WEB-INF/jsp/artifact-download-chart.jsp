@@ -181,7 +181,7 @@
 
 </html>
 
-<script src="/js/jquery-3.6.0.js"></script>
+<script src="/js/jquery-3.6.0.min.js"></script>
 <script src="/js/Chart.min.js"></script>
 <script src="/js/moment.min.js"></script>
 <script>
@@ -215,6 +215,7 @@
 		showMessages();
 	}
     
+	
     function loadPageContent() {
     	allProjectInfos = getAllProjectInfos();
 		artifactIds = selectProjectInfos(groupIdsQueryParam, artifactIdsQueryParam, aliasQueryParam);
@@ -271,6 +272,7 @@
 		return artifactIds;	
 	}
 	
+	
 	function sleep(milliseconds) {
 		var start = new Date().getTime();
 		var end=0;
@@ -278,6 +280,7 @@
 			end = new Date().getTime();
 		}
 	}
+	
 	
 	function containsArtifactId(groupIdValues, artifactIdValues, artifactId) {
 		for (j = 0; j < artifactIdValues.length; j++) {
@@ -388,21 +391,6 @@
 		document.getElementById("overlay").style.display = "none";
 		document.documentElement.style.overflow = 'scroll';
 		document.body.scroll = "yes";	
-	}
-	
-	
-	function messagesContains(message) {
-		return messages != null && messages.includes(message);
-	}
-	
-	
-	function showMessages() {
-		if (messages != null) {
-			for (i = 0; i < messages.length; i++) {
-	            alert(decodeURIComponent(messages[i]));
-	        }
-			messages = null;
-		}
 	}
 	
 	
@@ -674,7 +662,21 @@
             maintainAspectRatio: false
         };
     }
-
+	
+    
+	function messagesContains(message) {
+		return messages != null && messages.includes(message);
+	}
+	
+	
+	function showMessages() {
+		if (messages != null) {
+			for (i = 0; i < messages.length; i++) {
+	            alert(decodeURIComponent(messages[i]));
+	        }
+			messages = null;
+		}
+	}
     
     function displayError(id) {
         var errorMessage = "Could not retrieve download count from Maven Central: try again later or tomorrow";
