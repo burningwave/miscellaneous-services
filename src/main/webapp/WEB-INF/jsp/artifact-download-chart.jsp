@@ -251,6 +251,9 @@
         for (i = 0; i < artifactIds.length; i++) {
             launchAsyncCall(artifactIds[i]);
         }
+        if (artifactIds.length == 0) {
+        	displayError();
+        }
     }
     
 	function selectProjectInfos(groupIdValues, artifactIdValues, aliasValues) {
@@ -298,7 +301,7 @@
 	
 	
 	function getAllProjectInfos() {
-		var values = getAllProjectInfosFromRemote().responseJSON;
+		var values = getAllProjectInfosFromRemote();
 		for (i = 0; i < values.length; i++) {
             values[i][2] = hexToRgb(values[i][2]);
         }
@@ -545,21 +548,27 @@
     
 	function getAllProjectInfosFromRemote() {
         var url = '/miscellaneous-services/nexus-connector/project-info';
-        return jQuery.ajax({
+        var response = jQuery.ajax({
             url: url,
-            data: {
-                format: 'json'
+            data: null,
+            error: function (jqXhr, textStatus, errorMessage) {
+            	if (messages == null) {
+            		messages = [];
+            	}
+            	messages.push('Cannot load project informations');
             },
-            /*error: function (jqXhr, textStatus, errorMessage) { // error callback 
-                alert('Error: ' + errorMessage);
-            },*/
             dataType: 'json',
-            /*success: function(data) {
-                alert(data);
-            },*/
             type: 'GET',
 			async: false
         });
+        var responseJSon;
+        if (response != null) {
+        	responseJSon = response.responseJSON
+        }
+        if (responseJSon == null) {
+        	responseJSon = [];
+        }
+        return responseJSon;
 	}
 
 
@@ -669,16 +678,21 @@
     
     function displayError(id) {
         var errorMessage = "Could not retrieve download count from Maven Central: try again later or tomorrow";
-        var node = document.getElementById(id + "Downloads");
-        while (node.firstChild) {
-            node.removeChild(node.firstChild);
+        var node;
+        if (id != null) {
+	        node = document.getElementById(id + "Downloads");
+	        while (node.firstChild) {
+	            node.removeChild(node.firstChild);
+	        }
+	        node.appendChild(document.createTextNode(errorMessage));
         }
-        node.appendChild(document.createTextNode(errorMessage));
         node = document.getElementById("TotalDownloads");
-        while (node.firstChild) {
-            node.removeChild(node.firstChild);
+        if (node != null) {
+	        while (node.firstChild) {
+	            node.removeChild(node.firstChild);
+	        }
+	        node.appendChild(document.createTextNode(errorMessage));
         }
-        node.appendChild(document.createTextNode(errorMessage));
         if (attemptedLoadingArtifactIds.length == artifactIds.length) {
             overlayOff(); 
         }
