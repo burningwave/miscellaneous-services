@@ -250,7 +250,7 @@
         }
 
         for (i = 0; i < artifactIds.length; i++) {
-            launchAsyncCall(artifactIds[i]);
+            launchAsyncCall(artifactIds[i], startDate.format('YYYY-MM'), months);
         }
         if (artifactIds.length == 0) {
         	displayError();
@@ -498,35 +498,35 @@
 	}
 
 
-    function launchAsyncCall(artifactId, startDate, months) {
-        var startDateParam = startDate != null ? '&startDate=' + startDate : '';
-        var monthsParam = months != null ? '&months=' + months : '';
+    function launchAsyncCall(artifactIdInputParam, startDateInputParam, monthsInputParam) {
+        var startDateParam = startDateInputParam != null ? '&startDate=' + startDateInputParam : '';
+        var monthsParam = monthsInputParam != null ? '&months=' + monthsInputParam : '';
         var url = '/miscellaneous-services/stats/downloads-for-month?' +
-			'groupId=' + artifactId.split(':')[0] + '&' +
-			'artifactId=' + artifactId.split(':')[1] + '&' +
+			'groupId=' + artifactIdInputParam.split(':')[0] + '&' +
+			'artifactId=' + artifactIdInputParam.split(':')[1] + '&' +
 			startDateParam + monthsParam;
         return jQuery.ajax({
             url: url,
             data: null,
             error: function (jqXhr, textStatus, errorMessage) { // error callback 
-    			attemptedLoadingArtifactIds.push(artifactId);
-    			displayError(artifactId);
+    			attemptedLoadingArtifactIds.push(artifactIdInputParam);
+    			displayError(artifactIdInputParam);
             },
             dataType: 'json',
             success: function(artifactDownloads) {
 				if (artifactDownloads != null) {
-					loadedArtifactIds.push(artifactId);
-					attemptedLoadingArtifactIds.push(artifactId);
+					loadedArtifactIds.push(artifactIdInputParam);
+					attemptedLoadingArtifactIds.push(artifactIdInputParam);
 					buildChartData(monthlyTrendChartDatasets, overallTrendChartDatasets,
-						artifactId,
-						getLabel(artifactId), artifactDownloads, 
-						getBackgroundColor(artifactId),
-						getBorderColor(artifactId)
+						artifactIdInputParam,
+						getLabel(artifactIdInputParam), artifactDownloads, 
+						getBackgroundColor(artifactIdInputParam),
+						getBorderColor(artifactIdInputParam)
 					);
 					buildTotalTrendAndShowChart();
 				} else {
-	    			attemptedLoadingArtifactIds.push(artifactId);
-	    			displayError(artifactId);
+	    			attemptedLoadingArtifactIds.push(artifactIdInputParam);
+	    			displayError(artifactIdInputParam);
 				}
             },
             type: 'GET'
