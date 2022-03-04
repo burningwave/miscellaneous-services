@@ -249,7 +249,7 @@
         }
 
         for (i = 0; i < artifactIds.length; i++) {
-            launchAsyncCallForOne(artifactIds[i], 3);
+            launchAsyncCall(artifactIds[i]);
         }
     }
     
@@ -410,36 +410,6 @@
 	}
 	
 
-	function launchAsyncCallForOne(artifactId, attempt) {
-		if (attempt > 0) {
-			jQuery.when(
-				launchAsyncCall(
-					artifactId, 
-					startDateQueryParam, 
-					months
-				)
-			).done(function ( artifactDownloads ) {
-				if (artifactDownloads != null) {
-					loadedArtifactIds.push(artifactId);
-					attemptedLoadingArtifactIds.push(artifactId);
-					buildChartData(monthlyTrendChartDatasets, overallTrendChartDatasets,
-						artifactId,
-						getLabel(artifactId), artifactDownloads, 
-						getBackgroundColor(artifactId),
-						getBorderColor(artifactId)
-					);
-					buildTotalTrendAndShowChart();
-				} else {
-					launchAsyncCallForOne(artifactId, --attempt);
-				}            
-			});
-		} else {
-			attemptedLoadingArtifactIds.push(artifactId);
-			displayError(artifactId);
-		}
-	}
-	
-
     function buildTotalTrendAndShowChart() {
         if (loadedArtifactIds.length == artifactIds.length && monthlyTrendChartDatasets[0] != null) {
             var totalDownloads = [];
@@ -505,6 +475,7 @@
 		return getColorOrRandomColor(artifactId);
     }
 	
+    
 	function getColorOrRandomColor(artifactId) {
 		var artifactInfos;
 		for (i = 0; i < allProjectInfos.length; i++) {
@@ -545,16 +516,28 @@
 			startDateParam + monthsParam;
         return jQuery.ajax({
             url: url,
-            data: {
-                format: 'json'
+            data: null,
+            error: function (jqXhr, textStatus, errorMessage) { // error callback 
+    			attemptedLoadingArtifactIds.push(artifactId);
+    			displayError(artifactId);
             },
-            /*error: function (jqXhr, textStatus, errorMessage) { // error callback 
-                alert('Error: ' + errorMessage);
-            },*/
             dataType: 'json',
-            /*success: function(data) {
-                alert(data);
-            },*/
+            success: function(artifactDownloads) {
+				if (artifactDownloads != null) {
+					loadedArtifactIds.push(artifactId);
+					attemptedLoadingArtifactIds.push(artifactId);
+					buildChartData(monthlyTrendChartDatasets, overallTrendChartDatasets,
+						artifactId,
+						getLabel(artifactId), artifactDownloads, 
+						getBackgroundColor(artifactId),
+						getBorderColor(artifactId)
+					);
+					buildTotalTrendAndShowChart();
+				} else {
+	    			attemptedLoadingArtifactIds.push(artifactId);
+	    			displayError(artifactId);
+				}
+            },
             type: 'GET'
         });
     }
@@ -691,7 +674,7 @@
             node.removeChild(node.firstChild);
         }
         node.appendChild(document.createTextNode(errorMessage));
-        node = document.getElementById("totalDownloads");
+        node = document.getElementById("TotalDownloads");
         while (node.firstChild) {
             node.removeChild(node.firstChild);
         }
