@@ -377,8 +377,8 @@
 			'<a href="' + site +'" style="color:' + color + ';">' + (artifactId != null ? artifactId : '') + '</a>' :
 			(artifactId != null ? artifactId : '');
 		var item = 
-			'<div id="' + artifactId + 'DownloadsRow" style="display: table-row; font-size: 14px;">' + 
-			'	<div style="display: table-cell;color: ' + color + ';">' + 
+			'<div id="' + artifactId + 'DownloadsRow" style="display: table-row; font-size: 14px;">' +
+			'	<div style="display: table-cell; color: ' + color + ';">' +
 			'   	<b>' + label + '</b>' + (artifactId != null ? ':' : '') + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
 			'	</div>' +
 			'	<div id="' + artifactId + 'Downloads" style="display: table-cell; text-align: right; color: grey;">' +
@@ -660,6 +660,9 @@
             animation: {
                 duration: 0
             },
+            legend: {
+        		display: false
+        	},
             maintainAspectRatio: false
         };
     }
