@@ -43,7 +43,7 @@ springdoc.swagger-ui.path: /miscellaneous-services/api-docs.html
 application.authorization.token: ${APPLICATION_AUTHORIZATION_TOKEN}
 application.authorization.token.type: ${APPLICATION_AUTHORIZATION_TOKEN_TYPE:Basic}
 
-nexus-connector.group.enabled: ${NEXUS_CONNECTOR_ENABLED:true}
+nexus-connector.group.enabled: ${NEXUS_CONNECTOR_GROUP_ENABLED:true}
 nexus-connector.group.config: ${NEXUS_CONNECTOR_GROUP_CONFIG} 
 
 github-connector.enabled: ${GITHUB_CONNECTOR_ENABLED:true}
