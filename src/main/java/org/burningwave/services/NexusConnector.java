@@ -124,7 +124,6 @@ public class NexusConnector {
         Object[] configurationObjectsFromCache = cache.load(configurationObjectsKey);
         if (configurationObjectsFromCache == null) {
         	configurationObjectsFromCache = new Object [2];
-        	configurationObjectsFromCache[0] = new String[]{"https", "oss.sonatype.org"};
         }
         setHost(nexusConfiguration, configurationObjectsFromCache, username);
         setProjectInfos(nexusConfiguration, configurationObjectsFromCache);
