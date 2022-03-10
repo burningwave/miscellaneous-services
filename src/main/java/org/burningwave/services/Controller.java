@@ -80,9 +80,6 @@ public class Controller {
 		Environment environment,
 		SimpleCache cache
 	) throws InitializeException {
-		if (nexusConnectorGroup == null && gitHubConnector == null) {
-			throw new InitializeException("The Nexus connector group and the GitHub connector cannot be both disabled");
-		}
 		this.herokuConnector = herokuConnector;
 		this.nexusConnectorGroup = nexusConnectorGroup;
 		this.gitHubConnector = gitHubConnector;
