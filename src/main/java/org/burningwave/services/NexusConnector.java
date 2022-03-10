@@ -107,9 +107,10 @@ public class NexusConnector {
     	logger = org.slf4j.LoggerFactory.getLogger(NexusConnector.class);
     }
 
-    public NexusConnector(RestTemplate restTemplate, Utility utility, Configuration nexusConfiguration) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JsonMappingException, JsonProcessingException {
-    	this.utility = utility;
+    public NexusConnector(RestTemplate restTemplate, SimpleCache cache, Utility utility, Configuration nexusConfiguration) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JsonMappingException, JsonProcessingException {
     	this.restTemplate = restTemplate;
+    	this.cache = cache;
+    	this.utility = utility;
     	HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", nexusConfiguration.getAuthorization().getToken().getType() + " " + nexusConfiguration.getAuthorization().getToken().getValue());
         entity = new HttpEntity<String>(headers);
@@ -127,7 +128,7 @@ public class NexusConnector {
 
     }
 
-	public void setHost(Configuration nexusConfiguration) throws JAXBException {
+	public String setHost(Configuration nexusConfiguration) throws JAXBException {
 		String[] hosts = nexusConfiguration.getHost().split("\\|");
 		String username = new String(
 			Base64.getDecoder().decode(
@@ -139,7 +140,7 @@ public class NexusConnector {
     		try {
 				callGetGroupListRemote();
 				logger.info("Login successful on {} for user {}", host, username);
-				return;
+				return host;
 			} catch (org.springframework.web.client.HttpClientErrorException.Forbidden | org.springframework.web.client.HttpClientErrorException.Unauthorized exc) {
 				logger.info("Unable to login {} on {}", username, host);
 				if (host == hosts[hosts.length - 1]) {
@@ -148,6 +149,7 @@ public class NexusConnector {
 				}
 			}
     	}
+		return null;
 	}
 
 	public void clearCache() {
@@ -661,8 +663,7 @@ public class NexusConnector {
 					continue;
 				}
 				nexusConfiguration.setStartDate(configuration.getDefaultProjectConfig().getStartDate());
-				NexusConnector nexusConnector = new NexusConnector(restTemplate, utility, nexusConfiguration);
-				nexusConnector.cache = cache;
+				NexusConnector nexusConnector = new NexusConnector(restTemplate, cache, utility, nexusConfiguration);
 				nexusConnectors.add(nexusConnector);
 			}
 		}

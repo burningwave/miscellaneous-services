@@ -28,11 +28,17 @@
  */
 package org.burningwave.services;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.bind.JAXBException;
+
+import org.burningwave.Badge;
 import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,16 +61,22 @@ public class RestController {
 	private final static org.slf4j.Logger logger;
 
 	private NexusConnector.Group nexusConnectorGroup;
+	private GitHubConnector gitHubConnector;
+	private Badge badge;
 
     static {
     	logger = org.slf4j.LoggerFactory.getLogger(RestController.class);
     }
 
 	public RestController (
+		Badge badge,
 		@Nullable HerokuConnector herokuConnector,
-		@Nullable NexusConnector.Group nexusConnectorGroup
+		@Nullable NexusConnector.Group nexusConnectorGroup,
+		@Nullable GitHubConnector gitHubConnector
 	) throws InitializeException {
+		this.badge = badge;
 		this.nexusConnectorGroup = nexusConnectorGroup;
+		this.gitHubConnector = gitHubConnector;
 	}
 
 	@GetMapping(path = "/nexus-connector/project-info", produces = "application/json")
@@ -127,6 +139,47 @@ public class RestController {
 		}
 	}
 
+	@GetMapping(path = "/stats/total-downloads-badge", produces = "image/svg+xml")
+	public String getTotalDownloadsBadge(
+		@RequestParam(value = "groupId", required = false) Set<String> groupIds,
+		@RequestParam(value = "alias", required = false) Set<String> aliases,
+		@RequestParam(value = "artifactId", required = false) Set<String> artifactIds,
+		@RequestParam(value = "startDate", required = false) String startDate,
+		@RequestParam(value = "months", required = false) String months,
+		HttpServletResponse response
+	) throws JAXBException, ParseException, InterruptedException, ExecutionException {
+		response.setHeader("Cache-Control", "no-store");
+		String label = "artifact downloads";
+		return badge.build(
+			getTotalDownloadsOrNull(groupIds, aliases, artifactIds, startDate, months),
+			label,
+			label,
+			"#4c1",
+			125
+		);
+	}
+
+	@GetMapping(path = "/stats/star-count", produces = "application/json")
+	public Integer getStarCount(
+		@RequestParam(value = "repository", required = true) String[] repositories
+	) {
+		return getStarCountOrNull(repositories);
+	}
+
+	@GetMapping(path = "/stats/star-count-badge", produces = "image/svg+xml")
+	public String getStarCountBadge(
+		@RequestParam(value = "repository", required = true) String[] repositories,
+		HttpServletResponse response
+	) {
+		response.setHeader("Cache-Control", "no-store");
+		String label = "GitHub stars";
+		return badge.build(
+			getStarCountOrNull(repositories),
+			label,
+			"GitHub stars", "#78e", 93
+		);
+	}
+
 	private Long getTotalDownloadsOrNull(Set<String> groupIds, Set<String> aliases, Set<String> artifactIds, String startDate, String months) {
 		try {
 			try {
@@ -153,4 +206,20 @@ public class RestController {
 		}
 	}
 
+	private Integer getStarCountOrNull(String[] repositories) {
+		try {
+			try {
+				return gitHubConnector.getAllStarCount(repositories);
+			} catch (NullPointerException exc){
+				if (gitHubConnector == null) {
+					logger.warn("The GitHub connector is disabled");
+					return null;
+				}
+				throw exc;
+			}
+		} catch (Throwable exc) {
+			logger.error("Exception occurred", exc);
+			return null;
+		}
+	}
 }
