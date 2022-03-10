@@ -33,10 +33,12 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.burningwave.SimpleCache;
+import org.burningwave.services.NexusConnector.Group.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.lang.Nullable;
 import org.springframework.ui.Model;
@@ -45,6 +47,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import com.fasterxml.jackson.core.exc.StreamReadException;
+import com.fasterxml.jackson.databind.DatabindException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 @org.springframework.stereotype.Controller
@@ -59,6 +65,7 @@ public class Controller {
 	private NexusConnector.Group nexusConnectorGroup;
 	private Environment environment;
 	private SimpleCache cache;
+	private Supplier<String> viewStartDateSupplier;
 
     static {
     	SWITCH_TO_REMOTE_APP_SUCCESSFUL_MESSAGE = "App succesfully switched";
@@ -71,9 +78,20 @@ public class Controller {
 		@Nullable GitHubConnector gitHubConnector,
 		Environment environment,
 		SimpleCache cache
-	) throws InitializeException {
+	) throws InitializeException, StreamReadException, DatabindException, IOException {
 		this.herokuConnector = herokuConnector;
 		this.nexusConnectorGroup = nexusConnectorGroup;
+		org.burningwave.services.NexusConnector.Group.Configuration configuration;
+		if (nexusConnectorGroup != null) {
+			configuration = nexusConnectorGroup.getConfiguration();
+		} else {
+			ObjectMapper mapper = new ObjectMapper();
+			configuration = mapper.readValue(
+				this.getClass().getClassLoader().getResourceAsStream("nexus-connector.group.config.default.json"),
+				Configuration.class
+			);
+		}
+		viewStartDateSupplier = () -> new SimpleDateFormat("yyyy-MM").format(configuration.getDefaultProjectConfig().getStartDate().getTime());
 		this.gitHubConnector = gitHubConnector;
 		this.cache = cache;
 		this.environment = environment;
@@ -169,7 +187,7 @@ public class Controller {
 		String url = request.getRequestURL().toString();
     	String basePath = url.substring(0, url.indexOf("/miscellaneous-services"));
     	model.addAttribute("basePath", basePath);
-    	model.addAttribute("startDate", new SimpleDateFormat("yyyy-MM").format(nexusConnectorGroup.getConfiguration().getDefaultProjectConfig().getStartDate().getTime()));
+    	model.addAttribute("startDate", viewStartDateSupplier.get());
     	if (message != null && message.length > 0) {
     		model.addAttribute("message", "[\"" + String.join("\",\"", Arrays.asList(message))  + "\"]");
     	}

@@ -612,7 +612,6 @@ public class NexusConnector {
 		private Configuration configuration;
 
 		public Group(SimpleCache cache, RestTemplate restTemplate, Utility utility, Map<String, Object> configMap) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JAXBException, ParseException, IOException {
-
 			ObjectMapper mapper = new ObjectMapper();
 			Configuration configuration = mapper.readValue(
 				this.getClass().getClassLoader().getResourceAsStream("nexus-connector.group.config.default.json"),
