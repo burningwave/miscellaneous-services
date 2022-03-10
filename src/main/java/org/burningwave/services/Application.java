@@ -264,7 +264,7 @@ public class Application extends SpringBootServletInitializer {
 	) {
 		Collection<ScheduledFuture<?>> scheduledOperations = new ArrayList<>();
 		for (Map<String, String> jobConfig : config.values()) {
-			if (!jobConfig.get("cron").trim().equals("-")) {
+			if (!jobConfig.get("cron").trim().startsWith("-")) {
 				try {
 					String[] targetAndMethod = jobConfig.get("executable").split("\\.");
 					Object target = applicationContext.getBean(targetAndMethod[0]);
