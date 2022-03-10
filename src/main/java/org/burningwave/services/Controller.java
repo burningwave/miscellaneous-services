@@ -29,13 +29,19 @@
 package org.burningwave.services;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.bind.JAXBException;
 
+import org.burningwave.Badge;
 import org.burningwave.SimpleCache;
 import org.springframework.core.env.Environment;
 import org.springframework.lang.Nullable;
@@ -57,6 +63,7 @@ public class Controller {
 	private GitHubConnector gitHubConnector;
 	private HerokuConnector herokuConnector;
 	private NexusConnector.Group nexusConnectorGroup;
+	private Badge badge;
 	private Environment environment;
 	private SimpleCache cache;
 
@@ -69,6 +76,7 @@ public class Controller {
 		@Nullable HerokuConnector herokuConnector,
 		@Nullable NexusConnector.Group nexusConnectorGroup,
 		@Nullable GitHubConnector gitHubConnector,
+		Badge badge,
 		Environment environment,
 		SimpleCache cache
 	) throws InitializeException {
@@ -78,6 +86,7 @@ public class Controller {
 		this.herokuConnector = herokuConnector;
 		this.nexusConnectorGroup = nexusConnectorGroup;
 		this.gitHubConnector = gitHubConnector;
+		this.badge = badge;
 		this.cache = cache;
 		this.environment = environment;
 	}
@@ -117,6 +126,47 @@ public class Controller {
 			message = "Cannot switch app: " + exc.getMessage();
 		}
 		return view(request, model, message);
+	}
+
+	@GetMapping(path = "/stats/total-downloads-badge", produces = "image/svg+xml")
+	public String getTotalDownloadsBadge(
+		@RequestParam(value = "groupId", required = false) Set<String> groupIds,
+		@RequestParam(value = "alias", required = false) Set<String> aliases,
+		@RequestParam(value = "artifactId", required = false) Set<String> artifactIds,
+		@RequestParam(value = "startDate", required = false) String startDate,
+		@RequestParam(value = "months", required = false) String months,
+		HttpServletResponse response
+	) throws JAXBException, ParseException, InterruptedException, ExecutionException {
+		response.setHeader("Cache-Control", "no-store");
+		String label = "artifact downloads";
+		return badge.build(
+			getTotalDownloadsOrNull(groupIds, aliases, artifactIds, startDate, months),
+			label,
+			label,
+			"#4c1",
+			125
+		);
+	}
+
+	@GetMapping(path = "/stats/star-count", produces = "application/json")
+	public Integer getStarCount(
+		@RequestParam(value = "repository", required = true) String[] repositories
+	) {
+		return getStarCountOrNull(repositories);
+	}
+
+	@GetMapping(path = "/stats/star-count-badge", produces = "image/svg+xml")
+	public String getStarCountBadge(
+		@RequestParam(value = "repository", required = true) String[] repositories,
+		HttpServletResponse response
+	) {
+		response.setHeader("Cache-Control", "no-store");
+		String label = "GitHub stars";
+		return badge.build(
+			getStarCountOrNull(repositories),
+			label,
+			"GitHub stars", "#78e", 93
+		);
 	}
 
 	@GetMapping(path = "/clear-cache")
@@ -166,6 +216,49 @@ public class Controller {
 			messages.add("Exception occurred while clearing the cache: " + exc.getMessage());
 		}
 		return view(request, model, messages.toArray(new String[messages.size()]));
+	}
+
+	private Long getTotalDownloadsOrNull(Set<String> groupIds, Set<String> aliases, Set<String> artifactIds, String startDate, String months) {
+		try {
+			try {
+				return nexusConnectorGroup.getAllStats(
+					groupIds,
+					aliases,
+					artifactIds,
+					startDate != null ? new SimpleDateFormat("yyyy-MM").parse(startDate) : null,
+					months != null ? Integer.valueOf(months) : null
+				).getTotalDownloads();
+			} catch (NullPointerException exc){
+				if (nexusConnectorGroup == null) {
+					logger.warn("The Nexus connector group is disabled");
+					return null;
+				}
+				throw exc;
+			}
+		} catch (IllegalArgumentException exc) {
+			logger.error(exc.getMessage());
+			return null;
+		} catch (Throwable exc) {
+			logger.error("Exception occurred", exc);
+			return null;
+		}
+	}
+
+	private Integer getStarCountOrNull(String[] repositories) {
+		try {
+			try {
+				return gitHubConnector.getAllStarCount(repositories);
+			} catch (NullPointerException exc){
+				if (gitHubConnector == null) {
+					logger.warn("The GitHub connector is disabled");
+					return null;
+				}
+				throw exc;
+			}
+		} catch (Throwable exc) {
+			logger.error("Exception occurred", exc);
+			return null;
+		}
 	}
 
 	private String view(HttpServletRequest request, Model model, String... message) {
