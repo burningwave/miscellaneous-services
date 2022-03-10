@@ -60,7 +60,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -88,6 +87,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 
+@SuppressWarnings("unchecked")
 public class NexusConnector {
 	private final static org.slf4j.Logger logger;
 
@@ -115,41 +115,111 @@ public class NexusConnector {
         headers.set("Authorization", nexusConfiguration.getAuthorization().getToken().getType() + " " + nexusConfiguration.getAuthorization().getToken().getValue());
         entity = new HttpEntity<String>(headers);
         jaxbContext = JAXBContext.newInstance(GetGroupListOutput.class, GetArtifactListOutput.class, GetStatsOutput.class);
-        setHost(nexusConfiguration);
-        allProjects = retrieveProjectInfos(nexusConfiguration);
+		String username = new String(
+			Base64.getDecoder().decode(
+				entity.getHeaders().get("Authorization").iterator().next().split("\\s")[1]
+			), StandardCharsets.UTF_8
+		).split(":")[0];
+		String configurationObjectsKey = nexusConfiguration.getClass() + ";" + nexusConfiguration.getHost() + ";" + username;
+        Object[] configurationObjectsFromCache = cache.load(configurationObjectsKey);
+        if (configurationObjectsFromCache == null) {
+        	configurationObjectsFromCache = new Object [2];
+        	configurationObjectsFromCache[0] = new String[]{"https", "oss.sonatype.org"};
+        }
+        setHost(nexusConfiguration, configurationObjectsFromCache, username);
+        setProjectInfos(nexusConfiguration, configurationObjectsFromCache);
+        cache.store(configurationObjectsKey, configurationObjectsFromCache);
         logger.info("Projects configuration: {}", allProjects);
         inMemoryCache = new ConcurrentHashMap<>();
         timeToLiveForInMemoryCache = nexusConfiguration.getCache().getTtl();
         dayOfTheMonthFromWhichToLeave = nexusConfiguration.getCache().getDayOfTheMonthFromWhichToLeave();
     }
 
-    @PostConstruct
-    private void init() {
-
-    }
-
-	public String setHost(Configuration nexusConfiguration) throws JAXBException {
+	public void setHost(Configuration nexusConfiguration, Object[] configurationObjectsFromCache, String username) throws JAXBException {
 		String[] hosts = nexusConfiguration.getHost().split("\\|");
-		String username = new String(
-			Base64.getDecoder().decode(
-				entity.getHeaders().get("Authorization").iterator().next().split("\\s")[1]
-			), StandardCharsets.UTF_8
-		).split(":")[0];
 		for (String host : hosts) {
-    		getStatsUriComponentsBuilder = () -> UriComponentsBuilder.newInstance().scheme(nexusConfiguration.getScheme()).host(host);
+    		getStatsUriComponentsBuilder = () ->
+    			UriComponentsBuilder.newInstance().scheme(nexusConfiguration.getScheme()).host(host);
     		try {
 				callGetGroupListRemote();
 				logger.info("Login successful on {} for user {}", host, username);
-				return host;
-			} catch (org.springframework.web.client.HttpClientErrorException.Forbidden | org.springframework.web.client.HttpClientErrorException.Unauthorized exc) {
-				logger.info("Unable to login {} on {}", username, host);
+				configurationObjectsFromCache[0] = new String[] {nexusConfiguration.getScheme(), host};
+			} catch (org.springframework.web.client.HttpClientErrorException | org.springframework.web.client.HttpServerErrorException exc) {
+				logger.info("Unable to login {} on {}: {}", username, host, exc.getMessage());
 				if (host == hosts[hosts.length - 1]) {
-					logger.info("Throwing exception", host);
-					throw exc;
+					if (configurationObjectsFromCache[0] != null) {
+						String[] schemeAndHost = (String[])configurationObjectsFromCache[0];
+						logger.info("Loading scheme and host from cache");
+						getStatsUriComponentsBuilder = () ->
+							UriComponentsBuilder.newInstance().scheme(schemeAndHost[0]).host(schemeAndHost[1]);
+					} else {
+						throw exc;
+					}
 				}
 			}
     	}
-		return null;
+		if (configurationObjectsFromCache[0] != null ) {
+			logger.info("Loading scheme and host from cache");
+			getStatsUriComponentsBuilder = () ->
+				UriComponentsBuilder.newInstance().scheme(((String[])configurationObjectsFromCache[0])[0]).host(((String[])configurationObjectsFromCache[0])[1]);
+		}
+	}
+
+	private void setProjectInfos(Configuration nexusConfiguration, Object[] configurationObjectsFromCache) throws ParseException, JAXBException, JsonMappingException, JsonProcessingException {
+		try {
+			GetGroupListOutput groupList = callGetGroupListRemote();
+			Collection<Project> projectsInfo = new CopyOnWriteArrayList<>();
+	        Calendar startDateAsCalendar = nexusConfiguration.getStartDate();
+			for (GetGroupListOutput.Data.Group group : groupList.getData().getGroups()) {
+				Project project = new Project();
+				projectsInfo.add(project);
+				project.setStartDate(startDateAsCalendar);
+				project.setId(group.getId());
+				project.setName(group.getName());
+				Collection<Project.Artifact> artifacts = new CopyOnWriteArrayList<>();
+	        	project.setArtifacts(artifacts);
+				GetStatsInput input = new GetStatsInput();
+				input.setGroupId(group.getId());
+				input.setProjectId(group.getName());
+				GetArtifactListOutput artifactList = callGetArtifactListRemote(input);
+				for (String artifactName : artifactList.getData().getArtifacts()) {
+					Project.Artifact artifact = new Project.Artifact();
+					artifacts.add(artifact);
+					artifact.setName(artifactName);
+					artifact.setAlias(artifactName);
+					artifact.setColor(utility.randomHex());
+					artifact.setSite("https://maven-badges.herokuapp.com/maven-central/" + project.getName() + "/" + artifactName + "/");
+				}
+			}
+			Collection<Project> projects = nexusConfiguration.getProject();
+			if (projects != null) {
+				for (Project projectFromConfig : projects) {
+					Project project = getProject(projectsInfo, projectFromConfig.getName());
+					if (project == null) {
+						throw new IllegalArgumentException("Project named " + projectFromConfig.getName() + " not found on Nexus");
+					}
+					for (Project.Artifact artifactFromConfig : projectFromConfig.getArtifacts()) {
+						Project.Artifact artifact = getArtifactForName(project, artifactFromConfig.getName());
+						if (artifact == null) {
+							throw new IllegalArgumentException("Artifact named " + artifactFromConfig.getName() + " not found on Nexus");
+						}
+						utility.setIfNotNull(artifact::setAlias, artifactFromConfig::getAlias);
+						utility.setIfNotNull(artifact::setColor, artifactFromConfig::getColor);
+						utility.setIfNotNull(artifact::setSite, artifactFromConfig::getSite);
+					}
+				}
+			}
+			configurationObjectsFromCache[1] = projectsInfo;
+			this.allProjects = projectsInfo;
+		} catch (org.springframework.web.client.HttpClientErrorException | org.springframework.web.client.HttpServerErrorException exc) {
+			logger.warn("Unable to retrieve project informations: {}", exc.getMessage());
+			if (configurationObjectsFromCache[1] != null) {
+				logger.info("Setting project informations from cache");
+				this.allProjects = (Collection<Project>)configurationObjectsFromCache[1];
+			} else {
+				throw exc;
+			}
+		}
 	}
 
 	public void clearCache() {
@@ -272,53 +342,6 @@ public class NexusConnector {
 
 	private Collection<Project.Artifact> get(Project project, Function<Artifact, String> propertySupplier, Collection<String> values) {
 		return project.getArtifacts().stream().filter(artifact ->  values.contains(propertySupplier.apply(artifact))).collect(Collectors.toCollection(LinkedHashSet::new));
-	}
-
-	private Collection<Project> retrieveProjectInfos(Configuration nexusConfiguration) throws ParseException, JAXBException, JsonMappingException, JsonProcessingException {
-		GetGroupListOutput groupList = callGetGroupListRemote();
-		Collection<Project> projectsInfo = new CopyOnWriteArrayList<>();
-        Calendar startDateAsCalendar = nexusConfiguration.getStartDate();
-		for (GetGroupListOutput.Data.Group group : groupList.getData().getGroups()) {
-			Project project = new Project();
-			projectsInfo.add(project);
-			project.setStartDate(startDateAsCalendar);
-			project.setId(group.getId());
-			project.setName(group.getName());
-			Collection<Project.Artifact> artifacts = new CopyOnWriteArrayList<>();
-        	project.setArtifacts(artifacts);
-			GetStatsInput input = new GetStatsInput();
-			input.setGroupId(group.getId());
-			input.setProjectId(group.getName());
-			GetArtifactListOutput artifactList = callGetArtifactListRemote(input);
-			for (String artifactName : artifactList.getData().getArtifacts()) {
-				Project.Artifact artifact = new Project.Artifact();
-				artifacts.add(artifact);
-				artifact.setName(artifactName);
-				artifact.setAlias(artifactName);
-				artifact.setColor(utility.randomHex());
-				artifact.setSite("https://maven-badges.herokuapp.com/maven-central/" + project.getName() + "/" + artifactName + "/");
-			}
-		}
-
-		Collection<Project> projects = nexusConfiguration.getProject();
-		if (projects != null) {
-			for (Project projectFromConfig : projects) {
-				Project project = getProject(projectsInfo, projectFromConfig.getName());
-				if (project == null) {
-					throw new IllegalArgumentException("Project named " + projectFromConfig.getName() + " not found on Nexus");
-				}
-				for (Project.Artifact artifactFromConfig : projectFromConfig.getArtifacts()) {
-					Project.Artifact artifact = getArtifactForName(project, artifactFromConfig.getName());
-					if (artifact == null) {
-						throw new IllegalArgumentException("Artifact named " + artifactFromConfig.getName() + " not found on Nexus");
-					}
-					utility.setIfNotNull(artifact::setAlias, artifactFromConfig::getAlias);
-					utility.setIfNotNull(artifact::setColor, artifactFromConfig::getColor);
-					utility.setIfNotNull(artifact::setSite, artifactFromConfig::getSite);
-				}
-			}
-		}
-        return projectsInfo;
 	}
 
 	private String getKey(GetStatsInput input) {
