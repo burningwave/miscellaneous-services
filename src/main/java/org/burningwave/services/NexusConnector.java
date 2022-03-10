@@ -123,7 +123,7 @@ public class NexusConnector {
 		String configurationObjectsKey = nexusConfiguration.getClass() + ";" + nexusConfiguration.getHost() + ";" + username;
         Object[] configurationObjectsFromCache = cache.load(configurationObjectsKey);
         if (configurationObjectsFromCache == null) {
-        	configurationObjectsFromCache = new Object [2];
+        	configurationObjectsFromCache = new Object[2];
         }
         setHost(nexusConfiguration, configurationObjectsFromCache, username);
         setProjectInfos(nexusConfiguration, configurationObjectsFromCache);
@@ -168,11 +168,10 @@ public class NexusConnector {
 		try {
 			GetGroupListOutput groupList = callGetGroupListRemote();
 			Collection<Project> projectsInfo = new CopyOnWriteArrayList<>();
-	        Calendar startDateAsCalendar = nexusConfiguration.getStartDate();
+
 			for (GetGroupListOutput.Data.Group group : groupList.getData().getGroups()) {
 				Project project = new Project();
 				projectsInfo.add(project);
-				project.setStartDate(startDateAsCalendar);
 				project.setId(group.getId());
 				project.setName(group.getName());
 				Collection<Project.Artifact> artifacts = new CopyOnWriteArrayList<>();
@@ -190,34 +189,37 @@ public class NexusConnector {
 					artifact.setSite("https://maven-badges.herokuapp.com/maven-central/" + project.getName() + "/" + artifactName + "/");
 				}
 			}
-			Collection<Project> projects = nexusConfiguration.getProject();
-			if (projects != null) {
-				for (Project projectFromConfig : projects) {
-					Project project = getProject(projectsInfo, projectFromConfig.getName());
-					if (project == null) {
-						throw new IllegalArgumentException("Project named " + projectFromConfig.getName() + " not found on Nexus");
-					}
-					for (Project.Artifact artifactFromConfig : projectFromConfig.getArtifacts()) {
-						Project.Artifact artifact = getArtifactForName(project, artifactFromConfig.getName());
-						if (artifact == null) {
-							throw new IllegalArgumentException("Artifact named " + artifactFromConfig.getName() + " not found on Nexus");
-						}
-						utility.setIfNotNull(artifact::setAlias, artifactFromConfig::getAlias);
-						utility.setIfNotNull(artifact::setColor, artifactFromConfig::getColor);
-						utility.setIfNotNull(artifact::setSite, artifactFromConfig::getSite);
-					}
-				}
-			}
-			configurationObjectsFromCache[1] = projectsInfo;
-			this.allProjects = projectsInfo;
+			configurationObjectsFromCache[1] = this.allProjects = projectsInfo;
 		} catch (org.springframework.web.client.HttpClientErrorException | org.springframework.web.client.HttpServerErrorException exc) {
-			logger.warn("Unable to retrieve project informations: {}", exc.getMessage());
+			logger.warn("Unable to retrieve project informations from remote: {}", exc.getMessage());
 			if (configurationObjectsFromCache[1] != null) {
 				logger.info("Setting project informations from cache");
 				this.allProjects = (Collection<Project>)configurationObjectsFromCache[1];
 			} else {
 				throw exc;
 			}
+		}
+		Collection<Project> projects = nexusConfiguration.getProject();
+		if (projects != null) {
+			for (Project projectFromConfig : projects) {
+				Project project = getProject(this.allProjects, projectFromConfig.getName());
+				if (project == null) {
+					throw new IllegalArgumentException("Project named " + projectFromConfig.getName() + " not found on Nexus");
+				}
+				for (Project.Artifact artifactFromConfig : projectFromConfig.getArtifacts()) {
+					Project.Artifact artifact = getArtifactForName(project, artifactFromConfig.getName());
+					if (artifact == null) {
+						throw new IllegalArgumentException("Artifact named " + artifactFromConfig.getName() + " not found on Nexus");
+					}
+					utility.setIfNotNull(artifact::setAlias, artifactFromConfig::getAlias);
+					utility.setIfNotNull(artifact::setColor, artifactFromConfig::getColor);
+					utility.setIfNotNull(artifact::setSite, artifactFromConfig::getSite);
+				}
+			}
+		}
+		Calendar startDateAsCalendar = nexusConfiguration.getStartDate();
+		for (Project project : allProjects) {
+			project.setStartDate(startDateAsCalendar);
 		}
 	}
 
