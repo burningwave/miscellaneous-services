@@ -1,6 +1,6 @@
 {
 	"defaultProjectConfig": {
-		"startDate": "2018-12"
+		"startDate": "2010-01"
 	},
 	"connector": [{
 		"host" : "oss.sonatype.org|s01.oss.sonatype.org",
