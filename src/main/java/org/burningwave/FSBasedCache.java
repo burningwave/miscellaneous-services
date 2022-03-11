@@ -95,4 +95,15 @@ public class FSBasedCache extends SimpleCache.Abst {
 		logger.info("Physical cache cleaning done");
 	}
 
+
+	@Override
+	public void delete(String... keys) {
+		for (String key : keys) {
+			File cacheItem = new File(basePath + "/" + Base64.getEncoder().encodeToString(key.getBytes(StandardCharsets.UTF_8)) + ".ser");
+			if (cacheItem.exists()) {
+				cacheItem.delete();
+			}
+		}
+	}
+
 }

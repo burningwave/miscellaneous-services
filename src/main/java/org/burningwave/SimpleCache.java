@@ -41,6 +41,8 @@ public interface SimpleCache {
 
 	public <T extends Serializable> T load(String key);
 
+	public void delete(String... keys);
+
 	public void clear();
 
 	public Set<Listener> getListeners();

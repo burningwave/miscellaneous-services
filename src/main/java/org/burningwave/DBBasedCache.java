@@ -38,6 +38,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -96,6 +97,14 @@ public class DBBasedCache extends SimpleCache.Abst {
 	}
 
 	@Override
+	@Transactional
+	public void delete(String... keys) {
+		for (String key : keys) {
+			repository.deleteByKey(key);
+		}
+	}
+
+	@Override
 	public void clear() {
 		repository.deleteAll();
 		logger.info("Physical cache cleaning done");
@@ -126,7 +135,10 @@ public class DBBasedCache extends SimpleCache.Abst {
 
 			public Item findByKey(String key);
 
+			public void deleteByKey(String key);
+
 		}
 
 	}
+
 }
