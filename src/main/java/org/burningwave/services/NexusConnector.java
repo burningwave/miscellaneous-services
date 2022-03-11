@@ -188,16 +188,16 @@ public class NexusConnector {
 					artifact.setSite("https://maven-badges.herokuapp.com/maven-central/" + project.getName() + "/" + artifactName + "/");
 				}
 			}
-			configurationObjectsFromCache[1] = this.allProjects = projectsInfo;
+			configurationObjectsFromCache[1] = projectsInfo;
 		} catch (org.springframework.web.client.HttpClientErrorException | org.springframework.web.client.HttpServerErrorException exc) {
 			logger.warn("Unable to retrieve project informations from remote: {}", exc.getMessage());
 			if (configurationObjectsFromCache[1] != null) {
 				logger.info("Setting project informations from cache");
-				this.allProjects = (Collection<Project>)configurationObjectsFromCache[1];
 			} else {
 				throw exc;
 			}
 		}
+		this.allProjects = (Collection<Project>)configurationObjectsFromCache[1];
 		Collection<Project> projects = nexusConfiguration.getProject();
 		if (projects != null) {
 			for (Project projectFromConfig : projects) {
