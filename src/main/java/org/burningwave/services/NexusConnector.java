@@ -267,13 +267,17 @@ public class NexusConnector {
     		Calendar newDate = utility.newCalendarAtTheStartOfTheMonth();
 			newDate.set(Calendar.DATE, dayOfTheMonthFromWhichToLeave);
 			Runnable storer = () -> cache.storeAndNotify(key, newOutput, oldOutput);
-    		if (oldOutput != null && oldOutput.getData().getTotal() == newOutput.getData().getTotal()) {
-    			newDate.setTime(oldOutput.getTime());
-    			newDate.add(Calendar.DATE, 1);
+			if (Integer.valueOf(0).equals(newOutput.getData().getTimeline().getValues().stream().reduce((prev, next) -> next).orElse(null))) {
+				if (oldOutput != null) {
+	    			newDate.setTime(oldOutput.getTime());
+	    			newDate.add(Calendar.DATE, 1);
+				} else {
+					newDate.add(Calendar.MONTH, -1);
+				}
     			if (!isStartDateEqualsToDefaultValue(input) && !isMonthsEqualsToDefaultValue(input)) {
     				storer = () -> cache.store(key, newOutput);
     			}
-    		}
+			}
     		newOutput.setTime(newDate.getTime());
     		storer.run();
 			inMemoryCache.put(key, newOutput);
