@@ -421,6 +421,13 @@
             		totalDownloads[j] += monthlyTrendChartDatasets[i].data[j];  
             	}
             }
+            for (j = 0; j < totalDownloads.length; j++) {
+            	if (totalDownloads[j] == 0) {
+            		totalDownloads[j] = null;
+            	} else {
+            		break;
+            	}	
+            }
             var overallDownloads = buildChartDataSets(monthlyTrendChartDatasets, overallTrendChartDatasets, 'Total', totalDownloads,
                 totalRowTextColor, totalRowTextColor
             );
