@@ -158,7 +158,6 @@ public class NexusConnector {
 			}
     	}
 		if (configurationObjectsFromCache[0] != null ) {
-			logger.info("Loading scheme and host from cache");
 			getStatsUriComponentsBuilder = () ->
 				UriComponentsBuilder.newInstance().scheme(((String[])configurationObjectsFromCache[0])[0]).host(((String[])configurationObjectsFromCache[0])[1]);
 		}
