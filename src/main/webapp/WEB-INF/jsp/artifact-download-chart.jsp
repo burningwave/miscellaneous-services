@@ -405,24 +405,25 @@
     function buildTotalTrendAndShowChart() {
         if (loadedArtifactIds.length == artifactIds.length && monthlyTrendChartDatasets[0] != null) {
             var totalDownloads = [];
-            for (j = 0; j < monthlyTrendChartDatasets[0].data.length; j++) {
-                var totalForMonth = 0;
-                for (i = 0; i < monthlyTrendChartDatasets.length; i++) {
-                    totalForMonth += monthlyTrendChartDatasets[i].data[j];
+            var longestDataset = monthlyTrendChartDatasets[0].data;
+            if (monthlyTrendChartDatasets.length > 1) {
+            	for (j = 1; j < monthlyTrendChartDatasets.length; j++) {
+                	if (longestDataset.length < monthlyTrendChartDatasets[j].data.length) {
+                		longestDataset = monthlyTrendChartDatasets[j].data;
+                	}
                 }
-                totalDownloads.push(totalForMonth);
             }
-			for (j = 0; j < totalDownloads.length; j++) {
-				if (totalDownloads[j] != 0) {
-					break;
-				}
-				totalDownloads[j] = null;
-			}
-
+            for (j = 0; j < longestDataset.length; j++) {
+            	totalDownloads.push(0);            	
+            }
+            for (i = 0; i < monthlyTrendChartDatasets.length; i++) {
+            	for (j = 0; j < monthlyTrendChartDatasets[i].data.length; j++) {
+            		totalDownloads[j] += monthlyTrendChartDatasets[i].data[j];  
+            	}
+            }
             var overallDownloads = buildChartDataSets(monthlyTrendChartDatasets, overallTrendChartDatasets, 'Total', totalDownloads,
                 totalRowTextColor, totalRowTextColor
             );
-
             document.getElementById("TotalDownloads").appendChild(document.createTextNode(formatNumber(overallDownloads[overallDownloads.length - 1])));
         }
         if (attemptedLoadingArtifactIds.length == artifactIds.length) {
