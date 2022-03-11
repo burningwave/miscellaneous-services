@@ -167,7 +167,6 @@ public class NexusConnector {
 		try {
 			GetGroupListOutput groupList = callGetGroupListRemote();
 			Collection<Project> projectsInfo = new CopyOnWriteArrayList<>();
-
 			for (GetGroupListOutput.Data.Group group : groupList.getData().getGroups()) {
 				Project project = new Project();
 				projectsInfo.add(project);
