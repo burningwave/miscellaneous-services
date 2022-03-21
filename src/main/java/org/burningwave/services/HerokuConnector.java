@@ -75,7 +75,7 @@ public class HerokuConnector {
 	    	.pathSegment("apps", relativePath).build().toString();
     }
 
-    public void switchToRemoteApp() {
+    public void switchToRemoteApp() throws InterruptedException {
     	String schemeAndHostName = application.schemeAndHostName;
     	while (application.schemeAndHostName == null) {
     		synchronized(application) {
@@ -99,7 +99,9 @@ public class HerokuConnector {
 					new HttpEntity<String>(request.toString(), appHttpHeaders),
 					Map.class
 				);
-	        }, 1
+	        }, () ->
+	        	"Step 1 of switch to the remote app was successful", () ->
+	        	"Exception occurred while executing step 1 of switch to the remote app"
         );
 
         tryUntilExecuted(
@@ -112,7 +114,9 @@ public class HerokuConnector {
 					new HttpEntity<String>(request.toString(), remoteAppHttpHeaders),
 					Map.class
 				);
-		   }, 2
+		   }, () ->
+		       	"Step 2 of switch to the remote app was successful", () ->
+		       	"Exception occurred while executing step 2 of switch to the remote app"
         );
 
         tryUntilExecuted(
@@ -125,18 +129,21 @@ public class HerokuConnector {
 					new HttpEntity<String>(request.toString(), appHttpHeaders),
 					Map.class
 				);
-		    }, 3
+		    }, () ->
+		       	"Step 3 of switch to the remote app was successful", () ->
+		       	"Exception occurred while executing step 3 of switch to the remote app"
     	);
     }
 
-    private void tryUntilExecuted(Supplier<ResponseEntity<?>> responseEntitySupplier, int stepCount) {
+    private void tryUntilExecuted(Supplier<ResponseEntity<?>> responseEntitySupplier, Supplier<String> succesfullMessage, Supplier<String> exceptionMessage) throws InterruptedException {
     	while (true) {
     		try {
     			responseEntitySupplier.get();
-    			logger.info("Step " + stepCount + " of switch to the remote app was successful");
+    			logger.info(succesfullMessage.get());
     			break;
     		} catch (Throwable exc) {
-    			logger.error("Exception occurred while executing step " + stepCount + " of switch to the remote app", exc);
+    			logger.error(exceptionMessage.get(), exc);
+    			Thread.sleep(5000);
     		}
     	}
 
