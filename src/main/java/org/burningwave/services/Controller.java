@@ -33,7 +33,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.TreeSet;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -66,6 +68,7 @@ public class Controller {
 	private Environment environment;
 	private SimpleCache cache;
 	private Supplier<String> viewStartDateSupplier;
+	private Supplier<String> daysOfTheMonthFromWhichToLeaveSupplier;
 
     static {
     	SWITCH_TO_REMOTE_APP_SUCCESSFUL_MESSAGE = "App succesfully switched";
@@ -92,6 +95,7 @@ public class Controller {
 			);
 		}
 		viewStartDateSupplier = () -> new SimpleDateFormat("yyyy-MM").format(configuration.getDefaultProjectConfig().getStartDate().getTime());
+		daysOfTheMonthFromWhichToLeaveSupplier = () -> String.join("/", configuration.getConnector().stream().map(connConfig -> connConfig.getCache().getDayOfTheMonthFromWhichToLeave()).collect(Collectors.toCollection(TreeSet::new)).stream().map(day -> day == 1 ? "1st" : day == 2 ? "2nd" : day == 3 ? "3rd" : day + "th").collect(Collectors.toSet()));
 		this.gitHubConnector = gitHubConnector;
 		this.cache = cache;
 		this.environment = environment;
@@ -188,6 +192,7 @@ public class Controller {
     	String basePath = url.substring(0, url.indexOf("/miscellaneous-services"));
     	model.addAttribute("basePath", basePath);
     	model.addAttribute("startDate", viewStartDateSupplier.get());
+    	model.addAttribute("daysOfTheMonthFromWhichToLeave", daysOfTheMonthFromWhichToLeaveSupplier.get());
     	if (message != null && message.length > 0) {
     		model.addAttribute("message", "[\"" + String.join("\",\"", Arrays.asList(message))  + "\"]");
     	}

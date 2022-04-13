@@ -666,9 +666,9 @@ public class NexusConnector {
 					if (cacheConfig.getDayOfTheMonthFromWhichToLeave() == null) {
 						cacheConfig.setDayOfTheMonthFromWhichToLeave(defaultNexusConnectorConfig.getCache().getDayOfTheMonthFromWhichToLeave());
 					}
-					if (cacheConfig.getTtl() == null) {
+					//if (cacheConfig.getTtl() == null) {
 						cacheConfig.setTtl(defaultNexusConnectorConfig.getCache().getTtl());
-					}
+					//}
 				}
 				if (nexusConnectorConfig.getHost() == null) {
 					nexusConnectorConfig.setHost(defaultNexusConnectorConfig.getHost());
@@ -812,6 +812,7 @@ public class NexusConnector {
 			}
 			return projectInfos.values();
 		}
+
 
 		@lombok.NoArgsConstructor
 		@lombok.Getter

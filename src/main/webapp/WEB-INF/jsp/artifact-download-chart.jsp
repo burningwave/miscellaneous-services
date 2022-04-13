@@ -155,7 +155,7 @@
 				<span><br/><br/><br/><br/><br/><b>LOADING</b></span>
 			</div>
 			<div>
-				<p style="color: #666666;"><strong>Download counts are automatically updated after the sixth day of each month by connecting directly to Maven Central Statistics</strong>.</p>
+				<p style="color: #666666;"><strong>Download counts are automatically updated after the <c:out value="${daysOfTheMonthFromWhichToLeave}"/> day of each month by connecting directly to Maven Central Statistics</strong>.</p>
 			</div>
 			<div style="display: table;" id="downloadsSummary">
 
