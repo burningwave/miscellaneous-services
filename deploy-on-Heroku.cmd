@@ -12,6 +12,6 @@ SET currentUnit=%currentDir:~0,2%
 ::for %%I in (.) do set CurrDirName=%%~nxI
 ::echo %CurrDirName%
 
-heroku git:remote -a shared-software-off
+heroku git:remote -a shared-software
 git commit --allow-empty -m "Deploy on Heroku"
 git push heroku main
