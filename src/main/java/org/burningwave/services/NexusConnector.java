@@ -792,7 +792,7 @@ public class NexusConnector {
 			List<Integer> outputValues = output.getDownloadsForMonth();
 			List<Integer> getStatsOutputValues = getStatsOutput.getData().getTimeline().getValues();
 			for (int i = 0; i < outputValues.size(); i++) {
-				outputValues.set(i, outputValues.get(i) + i < getStatsOutputValues.size() ? getStatsOutputValues.get(i) : 0);
+				outputValues.set(i, outputValues.get(i) + getStatsOutputValues.get(i));
 			}
 		}
 
