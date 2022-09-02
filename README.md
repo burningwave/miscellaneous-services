@@ -33,7 +33,7 @@ On Heroku the minimal configuration requires only to set the `NEXUS_CONNECTOR_GR
 
 <br>
 
-If you need to set up multiple Nexus accounts or customize the color and the target of the links in the [artifact download statistics page](https://shared-software.herokuapp.com/miscellaneous-services/stats/artifact-download-chart), you can do the following:
+If you need to set up multiple Nexus accounts or customize the color and the target of the links in the artifact download statistics page you can do the following:
 ```json
 {
     "connector": [{
