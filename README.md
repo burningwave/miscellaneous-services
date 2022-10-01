@@ -3,7 +3,7 @@
 <img src="https://raw.githubusercontent.com/burningwave/burningwave.github.io/main/logo.png" alt="logo.png" height="180px" align="right"/>
 </a>
 
-[![HitCount](https://www.burningwave.org/generators/generate-visited-pages-badge.php)](https://www.burningwave.org#bw-counters)
+[![HitCount](https://www.burningwave.org/generators/generate-visited-pages-badge.php?)](https://www.burningwave.org#bw-counters)
 
 A simple application with which is possible:
 * to retrieve some statistical data showed at the url /miscellaneous-services/stats/artifact-download-chart of the application
