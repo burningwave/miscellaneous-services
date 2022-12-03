@@ -26,37 +26,56 @@
  # AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  # OR OTHER DEALINGS IN THE SOFTWARE.
  #
-spring.datasource.url: ${JDBC_DATABASE_URL:jdbc:postgresql://localhost:5432/postgres}
-spring.datasource.username: ${JDBC_DATABASE_USERNAME:postgres}
-spring.datasource.password: ${JDBC_DATABASE_PASSWORD}
+spring:
+  datasource:
+    url: ${JDBC_DATABASE_URL:jdbc:postgresql://localhost:5432/postgres}
+    username: ${JDBC_DATABASE_USERNAME:postgres}
+    password: ${JDBC_DATABASE_PASSWORD}
+  jpa:
+    properties:
+      hibernate:
+        jdbc.lob.non_contextual_creation: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
 
-spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation: true
-spring.jpa.properties.hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.hibernate.ddl-auto: update
+  mvc:
+    view:
+      prefix: /WEB-INF/jsp/
+      suffix: .jsp
 
-spring.mvc.view.prefix: /WEB-INF/jsp/
-spring.mvc.view.suffix: .jsp
-
-springdoc.api-docs.path: /miscellaneous-services/api-docs
-springdoc.swagger-ui.path: /miscellaneous-services/api-docs.html
+springdoc:
+  api-docs:
+    path: /miscellaneous-services/api-docs
+  swagger-ui:
+    path: /miscellaneous-services/api-docs.html
  
-application.authorization.token: ${APPLICATION_AUTHORIZATION_TOKEN}
-application.authorization.token.type: ${APPLICATION_AUTHORIZATION_TOKEN_TYPE:Basic}
+application:
+  authorization.token: ${APPLICATION_AUTHORIZATION_TOKEN}
+  authorization.token.type: ${APPLICATION_AUTHORIZATION_TOKEN_TYPE:Basic}
 
-nexus-connector.group.enabled: ${NEXUS_CONNECTOR_GROUP_ENABLED:true}
-nexus-connector.group.config: ${NEXUS_CONNECTOR_GROUP_CONFIG} 
+nexus-connector:
+  group:
+    enabled: ${NEXUS_CONNECTOR_GROUP_ENABLED:true}
+    config: ${NEXUS_CONNECTOR_GROUP_CONFIG} 
 
-github-connector.enabled: ${GITHUB_CONNECTOR_ENABLED:true}
-github-connector.host: ${GITHUB_CONNECTOR_HOST:api.github.com}
-github-connector.authorization.token: ${GITHUB_CONNECTOR_AUTHORIZATION_TOKEN}
-github-connector.authorization.token.type: ${GITHUB_CONNECTOR_AUTHORIZATION_TOKEN_TYPE:Bearer}
-github-connector.cache.ttl: ${GITHUB_CONNECTOR_CACHE_TTL:86400000}
+github-connector:
+  enabled: ${GITHUB_CONNECTOR_ENABLED:true}
+  host: ${GITHUB_CONNECTOR_HOST:api.github.com}
+  authorization.token: ${GITHUB_CONNECTOR_AUTHORIZATION_TOKEN}
+  authorization.token.type: ${GITHUB_CONNECTOR_AUTHORIZATION_TOKEN_TYPE:Bearer}
+  cache.ttl: ${GITHUB_CONNECTOR_CACHE_TTL:86400000}
 
-heroku-connector.authorization.token: ${HEROKU_CONNECTOR_AUTHORIZATION_TOKEN}
-heroku-connector.remote.authorization.token: ${HEROKU_CONNECTOR_REMOTE_AUTHORIZATION_TOKEN}
+heroku-connector:
+  authorization:
+    token: ${HEROKU_CONNECTOR_AUTHORIZATION_TOKEN}
+  remote:
+    authorization:
+      token: ${HEROKU_CONNECTOR_REMOTE_AUTHORIZATION_TOKEN}
 
-cache.type: ${CACHE_TYPE:File system based}
-cache.base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
+cache:
+  type: ${CACHE_TYPE:File system based}
+  base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
 
 scheduled-operations:
    - cron: ${SCHEDULED_OPERATIONS_PING_CRON:0 0/25 * * * *}
@@ -66,5 +85,22 @@ scheduled-operations:
      zone: ${SCHEDULED_OPERATIONS_SWITCH_TO_REMOTE_APP_ZONE:UTC}
      executable: herokuConnector.switchToRemoteApp
 
-burningwave.core.static-component-container.managed-logger.repository: 'org.burningwave.core.SLF4JManagedLoggerRepository'
-burningwave.core.static-component-container.modules.export-all-to-all: false
+burningwave:
+  core:
+    static-component-container:
+      managed-logger.repository: 'org.burningwave.core.SLF4JManagedLoggerRepository'
+      modules:
+        export-all-to-all: false
+        
+---
+spring:
+  profiles: ssl
+server:
+  port: ${SERVER_SSL_PORT:443}
+  ssl:
+    enabled: true
+    key-store: ${SERVER_SSL_KEY_STORE:classpath:keystore.jks}
+    key-store-password: ${SERVER_SSL_KEY_STORE_PASSWORD:changeit}
+    key-store-type: ${SERVER_SSL_KEY_STORE_TYPE:jks}
+    key-alias: ${SERVER_SSL_KEY_ALIAS:miscellaneous-services}
+    key-password: ${SERVER_SSL_KEY_PASSWORD:changeit}
