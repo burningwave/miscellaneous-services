@@ -99,7 +99,7 @@ server:
   port: ${SERVER_SSL_PORT:443}
   ssl:
     enabled: true
-    key-store: ${SERVER_SSL_KEY_STORE:classpath:keystore.jks}
+    key-store: ${SERVER_SSL_KEY_STORE:classpath:/keystore.jks}
     key-store-password: ${SERVER_SSL_KEY_STORE_PASSWORD:changeit}
     key-store-type: ${SERVER_SSL_KEY_STORE_TYPE:jks}
     key-alias: ${SERVER_SSL_KEY_ALIAS:miscellaneous-services}
