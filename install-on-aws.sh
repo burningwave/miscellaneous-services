@@ -19,7 +19,6 @@ screen -d -m sudo java \
 -jar ./target/miscellaneous-services-10.0.0.jar \
 -cp=./ \
 --APPLICATION_AUTHORIZATION_TOKEN=yourToken \
---CACHE_TYPE="File system based" \
 --GITHUB_CONNECTOR_AUTHORIZATION_TOKEN=yourToken \
 --IO_GITHUB_TOOL_FACTORY_NEXUS_AUTHORIZATION_TOKEN=yourToken \
 --ORG_BURNINGWAVE_NEXUS_AUTHORIZATION_TOKEN=yourToken \
