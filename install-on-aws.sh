@@ -14,7 +14,7 @@ sudo yum install git-all
 git clone https://github.com/burningwave/miscellaneous-services.git
 cd miscellaneous-services
 mvn clean dependency:list install
-sudo java \
+screen -d -m sudo java \
 -Dspring.profiles.active=burningwave,ssl \
 -jar ./target/miscellaneous-services-10.0.0.jar \
 -cp=./ \
