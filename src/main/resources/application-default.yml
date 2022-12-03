@@ -1,0 +1,71 @@
+NEXUS_CONNECTOR_GROUP_CONFIG: >
+   {
+       "defaultProjectConfig": {
+           "startDate": "2018-12"
+       },
+       "connector": [{
+               "authorization": {
+                   "token": {
+                       "value": "${ORG_BURNINGWAVE_NEXUS_AUTHORIZATION_TOKEN}"
+                   }
+               },
+               "project": [{
+                       "name": "org.burningwave",
+                       "artifacts": [{
+                               "name": "jvm-driver",
+                               "color": "00ff00",
+                               "site": "https://burningwave.github.io/jvm-driver/"
+                           }, {
+                               "name": "core",
+                               "color": "e54d1d",
+                               "site": "https://burningwave.github.io/core/"
+                           }, {
+                               "name": "graph",
+                               "color": "f7bc12",
+                               "site": "https://burningwave.github.io/graph/"
+                           }, {
+                               "name": "tools",
+                               "color": "066da1",
+                               "site": "https://burningwave.github.io/tools/"
+                           }
+                       ]
+                   }, {
+                       "name": "com.github.burningwave",
+                       "artifacts": [{
+                               "name": "bw-core",
+                               "alias": "core",
+                               "color": "e54d1d",
+                               "site": "https://burningwave.github.io/core/"
+                           }, {
+                               "name": "bw-graph",
+                               "alias": "graph",
+                               "color": "f7bc12",
+                               "site": "https://burningwave.github.io/graph/"
+                           }
+                       ]
+                   }
+               ]
+           }, {
+               "authorization": {
+                   "token": {
+                       "value": "${IO_GITHUB_TOOL_FACTORY_NEXUS_AUTHORIZATION_TOKEN}"
+                   }
+               },
+               "project": [{
+                       "name": "io.github.toolfactory",
+                       "artifacts": [{
+                               "name": "narcissus",
+                               "color": "402a94",
+                               "site": "https://toolfactory.github.io/narcissus/"
+                           }, {
+                               "name": "jvm-driver",
+                               "color": "00ff00",
+                               "site": "https://toolfactory.github.io/jvm-driver/"
+                           }
+                       ]
+                   }
+               ]
+           }
+       ]
+   }
+   
