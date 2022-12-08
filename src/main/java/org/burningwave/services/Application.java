@@ -47,6 +47,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBException;
 
+import org.apache.catalina.connector.Connector;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.burningwave.Badge;
@@ -65,9 +66,11 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.ErrorPage;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
+import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -105,7 +108,7 @@ public class Application extends SpringBootServletInitializer {
     	logger = org.slf4j.LoggerFactory.getLogger(Application.class);
     }
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
 	}
 
@@ -149,7 +152,7 @@ public class Application extends SpringBootServletInitializer {
 	@ConditionalOnExpression(value = "'${cache.type}'.trim().equalsIgnoreCase('File system based')")
 	public SimpleCache cache(
 		@Qualifier("cacheConfig") Map<String, String> configMap
-	) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
+	) {
 		Map<String, Object> configuration = new HashMap<>();
 		configuration.putAll(configMap);
 		return new FSBasedCache(configuration);
@@ -192,8 +195,7 @@ public class Application extends SpringBootServletInitializer {
 	) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
 		Map<String, Object> configuration = new HashMap<>();
 		configuration.putAll(configMap);
-		GitHubConnector gitHubConnector = new GitHubConnector(configuration);
-		return gitHubConnector;
+		return new GitHubConnector(configuration);
 	}
 
 
@@ -209,8 +211,7 @@ public class Application extends SpringBootServletInitializer {
 	public HerokuConnector herokuConnector(
 		@Qualifier("herokuConnector.config") Map<String, String> configMap
 	) {
-		HerokuConnector connector = new HerokuConnector(configMap);
-		return connector;
+		return new HerokuConnector(configMap);
 	}
 
 
@@ -248,6 +249,15 @@ public class Application extends SpringBootServletInitializer {
 		return new WebMvcConfigurer(application);
 	}
 
+    @Bean
+    @ConditionalOnProperty(value = {"server.ssl.enabled"}, havingValue = "true")
+    public ServletWebServerFactory servletContainer() {
+        Connector connector = new Connector(TomcatServletWebServerFactory.DEFAULT_PROTOCOL);
+        connector.setPort(8080);
+        TomcatServletWebServerFactory tomcat = new TomcatServletWebServerFactory();
+        tomcat.addAdditionalTomcatConnectors(connector);
+        return tomcat;
+    }
 
 	@Bean("scheduledOperations.config")
 	@ConfigurationProperties("scheduled-operations")
@@ -300,10 +310,8 @@ public class Application extends SpringBootServletInitializer {
 					if (applicationSchemeAndHostName != application.schemeAndHostName) {
 						synchronized(application) {
 							if (applicationSchemeAndHostName != application.schemeAndHostName) {
-								if (applicationSchemeAndHostName != application.schemeAndHostName) {
-									application.schemeAndHostName = applicationSchemeAndHostName;
-									application.notifyAll();
-								}
+								application.schemeAndHostName = applicationSchemeAndHostName;
+								application.notifyAll();
 							}
 						}
 					}
@@ -363,7 +371,7 @@ public class Application extends SpringBootServletInitializer {
 		@Bean("cache")
 		public SimpleCache cache(
 			@Qualifier("cacheConfig") Map<String, String> configMap
-		) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
+		) {
 			Map<String, Object> configuration = new HashMap<>();
 			configuration.putAll(configMap);
 			return new DBBasedCache(configuration);
