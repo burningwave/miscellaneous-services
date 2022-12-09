@@ -58,6 +58,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXBContext;
@@ -90,31 +92,38 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @SuppressWarnings("unchecked")
 public class NexusConnector {
 	private final static org.slf4j.Logger logger;
+	private static Pattern latestReleasePattern;
 
 	private RestTemplate restTemplate;
 	private HttpEntity<String> entity;
 	private JAXBContext jaxbContext;
 	private Supplier<UriComponentsBuilder> getStatsUriComponentsBuilder;
 	private Collection<Project> allProjects;
-	private Map<String, GetStatsOutput> inMemoryCache;
+	private Map<String, Object> inMemoryCache;
 	private long timeToLiveForInMemoryCache;
 	private int dayOfTheMonthFromWhichToLeave;
     private SimpleCache cache;
     private Utility utility;
 
 
+
     static {
     	logger = org.slf4j.LoggerFactory.getLogger(NexusConnector.class);
+    	latestReleasePattern = Pattern.compile("<latestRelease>(.*?)<\\/latestRelease>");
     }
 
-    public NexusConnector(RestTemplate restTemplate, SimpleCache cache, Utility utility, Configuration nexusConfiguration) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JsonMappingException, JsonProcessingException {
+    public NexusConnector(RestTemplate restTemplate, SimpleCache cache, Utility utility, Configuration nexusConfiguration) throws JAXBException, ParseException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException, JsonProcessingException {
     	this.restTemplate = restTemplate;
     	this.cache = cache;
     	this.utility = utility;
     	HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", nexusConfiguration.getAuthorization().getToken().getType() + " " + nexusConfiguration.getAuthorization().getToken().getValue());
         entity = new HttpEntity<String>(headers);
-        jaxbContext = JAXBContext.newInstance(GetGroupListOutput.class, GetArtifactListOutput.class, GetStatsOutput.class);
+        jaxbContext = JAXBContext.newInstance(
+    		GetGroupListOutput.class,
+    		GetArtifactListOutput.class,
+    		GetStatsOutput.class
+    	);
 		String username = new String(
 			Base64.getDecoder().decode(
 				entity.getHeaders().get("Authorization").iterator().next().split("\\s")[1]
@@ -240,7 +249,7 @@ public class NexusConnector {
 
     public GetStatsOutput getStats(GetStatsInput input) {
 		String key = getKey(input);
-		GetStatsOutput output = inMemoryCache.get(key);
+		GetStatsOutput output = (GetStatsOutput)inMemoryCache.get(key);
 		if (output == null) {
 			output = cache.load(key);
 			if (output != null) {
@@ -357,6 +366,64 @@ public class NexusConnector {
 			(isMonthsEqualsToDefaultValue(input) ?
 				"diffFromToday":
 				input.getMonths());
+	}
+
+	public GetLatestVersionOutput getLatestRelease(String groupId, String artifactId) {
+		String key = groupId + ":" + artifactId + ".latestRelease";
+		GetLatestVersionOutput output = (GetLatestVersionOutput)inMemoryCache.get(key);
+		if (output == null) {
+			output = cache.load(key);
+			if (output != null) {
+				inMemoryCache.put(key, output);
+			}
+		}
+		if (output != null) {
+			if ((new Date().getTime() - output.getTime().getTime()) <= 600000) {
+    			return output;
+    		}
+		}
+		GetLatestVersionOutput oldOutput = output;
+		return Synchronizer.execute(Objects.getId(this) + key, () -> {
+			GetLatestVersionOutput newOutput;
+			try {
+				newOutput = callGetLatestRelease(groupId, artifactId);
+			} catch (Throwable exc) {
+				if (oldOutput != null) {
+					return oldOutput;
+				}
+				return Throwables.rethrow(exc);
+			}
+    		newOutput.setTime(new Date());
+    		cache.store(key, newOutput);
+			inMemoryCache.put(key, newOutput);
+			return newOutput;
+		});
+	}
+
+	public GetLatestVersionOutput callGetLatestRelease(String groupId, String artifactId) {
+		UriComponents uriComponents =
+			getStatsUriComponentsBuilder.get()
+			.path("/service/local/lucene/search")
+			.queryParam("g", groupId)
+			.queryParam("a", artifactId)
+			.queryParam("collapseresults", "true")
+			.build();
+		ResponseEntity<String> response = restTemplate.exchange(
+			uriComponents.toString(),
+			HttpMethod.GET,
+			entity,
+			String.class
+		);
+		String responseBody = response.getBody();
+		if (responseBody != null) {
+			Matcher latestReleaseFinder = latestReleasePattern.matcher(responseBody);
+			if (latestReleaseFinder.find()) {
+				GetLatestVersionOutput output = new GetLatestVersionOutput();
+				output.setValue(latestReleaseFinder.group(1));
+				return output;
+			}
+		}
+		return new GetLatestVersionOutput();
 	}
 
 	private GetArtifactListOutput callGetArtifactListRemote(GetStatsInput input) throws JAXBException {
@@ -633,6 +700,19 @@ public class NexusConnector {
 
 	}
 
+	@lombok.NoArgsConstructor
+	@lombok.Getter
+	@lombok.Setter
+	@lombok.ToString
+	public static class GetLatestVersionOutput implements Serializable {
+
+		private static final long serialVersionUID = 6761217401866880541L;
+
+		private Date time;
+		private String value;
+
+	}
+
 	public static class Group {
 		private Collection<NexusConnector> nexusConnectors;
 		private Configuration configuration;
@@ -693,8 +773,26 @@ public class NexusConnector {
 			}
 		}
 
+		public GetLatestVersionOutput getLatestRelease(String artifactId) {
+			for (NexusConnector nexusConnector : nexusConnectors) {
+				for (Project project : nexusConnector.allProjects) {
+					String[] artifactIdAsSplittedString = artifactId.split(":");
+					if (project.getName().equals(artifactIdAsSplittedString[0]) &&
+						nexusConnector.containsArtifactNames(project, artifactIdAsSplittedString[1])
+					) {
+						return nexusConnector.getLatestRelease(
+							project.getName(),
+							artifactIdAsSplittedString[1]
+						);
+					}
+				}
+			}
+			return null;
+		}
+
 		public GetAllStatsOutput getAllStats(Set<String> groupIds, Set<String> aliases, Set<String> artifactIds, Date startDate, Integer months)
-				throws ParseException, JAXBException, InterruptedException, ExecutionException {
+			throws ParseException, JAXBException, InterruptedException, ExecutionException
+		{
 			Collection<CompletableFuture<GetStatsOutput>> outputSuppliers = new ArrayList<>();
 			for (NexusConnector nexusConnector : nexusConnectors) {
 				Set<String> artifactsToBeLoaded = new LinkedHashSet<>();
@@ -827,6 +925,7 @@ public class NexusConnector {
 			private Collection<NexusConnector.Configuration> connector;
 
 		}
+
 	}
 
 	@lombok.NoArgsConstructor

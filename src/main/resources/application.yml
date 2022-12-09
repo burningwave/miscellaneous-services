@@ -74,7 +74,8 @@ heroku-connector:
 
 cache:
   type: ${CACHE_TYPE:File system based}
-  base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
+  base-path: ${CACHE_BASE_PATH:${java.io.tmpdir}/Burningwave/miscellaneous-services}
+# base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
 
 scheduled-operations:
    - cron: ${SCHEDULED_OPERATIONS_PING_CRON:0 0/25 * * * *}

@@ -58,7 +58,7 @@ import io.swagger.v3.oas.annotations.info.Info;
     )
 )
 public class RestController {
-	private final static org.slf4j.Logger logger;
+	private static final org.slf4j.Logger logger;
 
 	private NexusConnector.Group nexusConnectorGroup;
 	private GitHubConnector gitHubConnector;
@@ -97,6 +97,32 @@ public class RestController {
 		}
 
 	}
+
+	@GetMapping(path = "/nexus-connector/project-info/latest-release", produces = "application/json")
+	public String getLatestRelease(
+		@RequestParam(value = "artifactId", required = true) String artifactId
+	) {
+		try {
+			try {
+				return nexusConnectorGroup.getLatestRelease(
+					artifactId
+				).getValue();
+			} catch (NullPointerException exc){
+				if (nexusConnectorGroup == null) {
+					logger.warn("The Nexus connector group is disabled");
+					return null;
+				}
+				throw exc;
+			}
+		} catch (IllegalArgumentException exc) {
+			logger.error(exc.getMessage());
+			return null;
+		} catch (Throwable exc) {
+			logger.error("Exception occurred", exc);
+			return null;
+		}
+	}
+
 
 	@GetMapping(path = "/stats/total-downloads", produces = "application/json")
 	public Long getTotalDownloads(
