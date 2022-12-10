@@ -20,13 +20,18 @@ NEXUS_CONNECTOR_GROUP_CONFIG: >
                                "color": "e54d1d",
                                "site": "https://burningwave.github.io/core/"
                            }, {
-                               "name": "graph",
-                               "color": "f7bc12",
-                               "site": "https://burningwave.github.io/graph/"
-                           }, {
                                "name": "tools",
                                "color": "066da1",
                                "site": "https://burningwave.github.io/tools/"
+                           }, {
+                               "name": "reflection",
+                               "color": "995ec0",
+                               "site": "https://burningwave.github.io/reflection/",
+                               "skip": "ifNotExists"
+                           }, {
+                               "name": "graph",
+                               "color": "f7bc12",
+                               "site": "https://burningwave.github.io/graph/"
                            }
                        ]
                    }, {

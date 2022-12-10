@@ -214,8 +214,15 @@ public class NexusConnector {
 					throw new IllegalArgumentException("Project named " + projectFromConfig.getName() + " not found on Nexus");
 				}
 				for (Project.Artifact artifactFromConfig : projectFromConfig.getArtifacts()) {
+					if ("always".equals(artifactFromConfig.skip)) {
+						removeArtifactForName(project, artifactFromConfig.getName());
+						continue;
+					}
 					Project.Artifact artifact = getArtifactForName(project, artifactFromConfig.getName());
 					if (artifact == null) {
+						if ("ifNotExists".equals(artifactFromConfig.skip)) {
+							continue;
+						}
 						throw new IllegalArgumentException("Artifact named " + artifactFromConfig.getName() + " not found on Nexus");
 					}
 					utility.setIfNotNull(artifact::setAlias, artifactFromConfig::getAlias);
@@ -338,6 +345,15 @@ public class NexusConnector {
 
 	public Artifact getArtifactForName(Project project, String id) {
 		return get(project, Project.Artifact::getName, Arrays.asList(id)).stream().findFirst().orElseGet(() -> null);
+	}
+
+	private void removeArtifactForName(Project project, String name) {
+		Collection<Artifact> artifacts = project.getArtifacts();
+		for (Artifact artifact : artifacts) {
+			if (artifact.getName().equals(name)) {
+				artifacts.remove(artifact);
+			}
+		}
 	}
 
 	public Collection<Artifact> getArtifactForAliases(Project project, Collection<String> aliases) {
@@ -947,7 +963,7 @@ public class NexusConnector {
 			private String alias;
 			private String color;
 			private String site;
-
+			private String skip;
 		}
 	}
 
