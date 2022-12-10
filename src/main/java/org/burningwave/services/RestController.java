@@ -32,6 +32,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -104,9 +105,11 @@ public class RestController {
 	) {
 		try {
 			try {
-				return nexusConnectorGroup.getLatestRelease(
-					artifactId
-				).getValue();
+				return Optional.ofNullable(
+					nexusConnectorGroup.getLatestRelease(
+						artifactId
+					).getValue()
+				).map(value -> "\"" + value + "\"").orElseGet(() -> null);
 			} catch (NullPointerException exc){
 				if (nexusConnectorGroup == null) {
 					logger.warn("The Nexus connector group is disabled");
