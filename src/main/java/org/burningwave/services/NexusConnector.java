@@ -774,9 +774,12 @@ public class NexusConnector {
 		}
 
 		public GetLatestVersionOutput getLatestRelease(String artifactId) {
+			String[] artifactIdAsSplittedString = artifactId.split(":");
+			if (artifactIdAsSplittedString.length != 2) {
+				throw new IllegalArgumentException("artifactId must be in the form 'groupId:artifactId' ('" + artifactId + "' provided)");
+			}
 			for (NexusConnector nexusConnector : nexusConnectors) {
 				for (Project project : nexusConnector.allProjects) {
-					String[] artifactIdAsSplittedString = artifactId.split(":");
 					if (project.getName().equals(artifactIdAsSplittedString[0]) &&
 						nexusConnector.containsArtifactNames(project, artifactIdAsSplittedString[1])
 					) {
