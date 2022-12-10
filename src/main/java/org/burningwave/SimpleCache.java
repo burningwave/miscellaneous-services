@@ -29,6 +29,7 @@
 package org.burningwave;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +47,19 @@ public interface SimpleCache {
 	public void clear();
 
 	public Set<Listener> getListeners();
+
+	@lombok.NoArgsConstructor
+	@lombok.Getter
+	@lombok.Setter
+	@lombok.ToString
+	public static class Item<T extends Serializable> implements Serializable {
+
+		private static final long serialVersionUID = -1321130683026508947L;
+
+		private Date time;
+		private T value;
+
+	}
 
 	public static abstract class Abst implements SimpleCache {
 		private final static org.slf4j.Logger logger;

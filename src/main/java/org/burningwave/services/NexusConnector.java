@@ -91,7 +91,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SuppressWarnings("unchecked")
 public class NexusConnector {
-	private final static org.slf4j.Logger logger;
+	private static final org.slf4j.Logger logger;
 	private static Pattern latestReleasePattern;
 
 	private RestTemplate restTemplate;
@@ -368,9 +368,9 @@ public class NexusConnector {
 				input.getMonths());
 	}
 
-	public GetLatestVersionOutput getLatestRelease(String groupId, String artifactId) {
+	public SimpleCache.Item<String> getLatestRelease(String groupId, String artifactId) {
 		String key = groupId + ":" + artifactId + ".latestRelease";
-		GetLatestVersionOutput output = (GetLatestVersionOutput)inMemoryCache.get(key);
+		SimpleCache.Item<String> output = (SimpleCache.Item<String>)inMemoryCache.get(key);
 		if (output == null) {
 			output = cache.load(key);
 			if (output != null) {
@@ -382,9 +382,9 @@ public class NexusConnector {
     			return output;
     		}
 		}
-		GetLatestVersionOutput oldOutput = output;
+		SimpleCache.Item<String> oldOutput = output;
 		return Synchronizer.execute(Objects.getId(this) + key, () -> {
-			GetLatestVersionOutput newOutput;
+			SimpleCache.Item<String> newOutput;
 			try {
 				newOutput = callGetLatestRelease(groupId, artifactId);
 			} catch (Throwable exc) {
@@ -400,7 +400,7 @@ public class NexusConnector {
 		});
 	}
 
-	public GetLatestVersionOutput callGetLatestRelease(String groupId, String artifactId) {
+	public SimpleCache.Item<String> callGetLatestRelease(String groupId, String artifactId) {
 		UriComponents uriComponents =
 			getStatsUriComponentsBuilder.get()
 			.path("/service/local/lucene/search")
@@ -418,12 +418,12 @@ public class NexusConnector {
 		if (responseBody != null) {
 			Matcher latestReleaseFinder = latestReleasePattern.matcher(responseBody);
 			if (latestReleaseFinder.find()) {
-				GetLatestVersionOutput output = new GetLatestVersionOutput();
+				SimpleCache.Item<String> output = new SimpleCache.Item<String>();
 				output.setValue(latestReleaseFinder.group(1));
 				return output;
 			}
 		}
-		return new GetLatestVersionOutput();
+		return new SimpleCache.Item<String>();
 	}
 
 	private GetArtifactListOutput callGetArtifactListRemote(GetStatsInput input) throws JAXBException {
@@ -700,19 +700,6 @@ public class NexusConnector {
 
 	}
 
-	@lombok.NoArgsConstructor
-	@lombok.Getter
-	@lombok.Setter
-	@lombok.ToString
-	public static class GetLatestVersionOutput implements Serializable {
-
-		private static final long serialVersionUID = 6761217401866880541L;
-
-		private Date time;
-		private String value;
-
-	}
-
 	public static class Group {
 		private Collection<NexusConnector> nexusConnectors;
 		private Configuration configuration;
@@ -773,7 +760,7 @@ public class NexusConnector {
 			}
 		}
 
-		public GetLatestVersionOutput getLatestRelease(String artifactId) {
+		public SimpleCache.Item<String> getLatestRelease(String artifactId) {
 			String[] artifactIdAsSplittedString = artifactId.split(":");
 			if (artifactIdAsSplittedString.length != 2) {
 				throw new IllegalArgumentException("artifactId must be in the form 'groupId:artifactId' ('" + artifactId + "' provided)");
