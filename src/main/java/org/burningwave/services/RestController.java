@@ -28,16 +28,13 @@
  */
 package org.burningwave.services;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.bind.JAXBException;
 
 import org.burningwave.Badge;
 import org.springframework.lang.Nullable;
@@ -71,7 +68,6 @@ public class RestController {
 
 	public RestController (
 		Badge badge,
-		@Nullable HerokuConnector herokuConnector,
 		@Nullable NexusConnector.Group nexusConnectorGroup,
 		@Nullable GitHubConnector gitHubConnector
 	) throws InitializeException {
@@ -176,8 +172,8 @@ public class RestController {
 		@RequestParam(value = "startDate", required = false) String startDate,
 		@RequestParam(value = "months", required = false) String months,
 		HttpServletResponse response
-	) throws JAXBException, ParseException, InterruptedException, ExecutionException {
-		response.setHeader("Cache-Control", "no-store");
+	) {
+		setNoCachedResponse(response, 43200);
 		String label = "artifact downloads";
 		return badge.build(
 			getTotalDownloadsOrNull(groupIds, aliases, artifactIds, startDate, months),
@@ -200,7 +196,7 @@ public class RestController {
 		@RequestParam(value = "repository", required = true) String[] repositories,
 		HttpServletResponse response
 	) {
-		response.setHeader("Cache-Control", "no-store");
+		setNoCachedResponse(response, 3600);
 		String label = "GitHub stars";
 		return badge.build(
 			getStarCountOrNull(repositories),
@@ -251,4 +247,14 @@ public class RestController {
 			return null;
 		}
 	}
+
+	private void setNoCachedResponse(HttpServletResponse response, long maxAgeValue) {
+		response.addHeader("Cache-Control", "no-store");
+		response.addHeader("Cache-Control", "no-cache");
+		response.addHeader("Cache-Control", "must-revalidate");
+		response.addHeader("Cache-Control", "max-age=" + maxAgeValue);
+		response.addHeader("Cache-Control", "post-check=0");
+		response.addHeader("Cache-Control", "pre-check=0");
+	}
+
 }
