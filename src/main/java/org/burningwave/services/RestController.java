@@ -186,14 +186,14 @@ public class RestController {
 
 	@GetMapping(path = "/stats/star-count", produces = "application/json")
 	public Integer getStarCount(
-		@RequestParam(value = "repository", required = true) String[] repositories
+		@RequestParam(value = "repository", required = true) Set<String> repositories
 	) {
 		return getStarCountOrNull(repositories);
 	}
 
 	@GetMapping(path = "/stats/star-count-badge", produces = "image/svg+xml")
 	public String getStarCountBadge(
-		@RequestParam(value = "repository", required = true) String[] repositories,
+		@RequestParam(value = "repository", required = true) Set<String> repositories,
 		HttpServletResponse response
 	) {
 		setNoCachedResponse(response, 3600);
@@ -231,7 +231,7 @@ public class RestController {
 		}
 	}
 
-	private Integer getStarCountOrNull(String[] repositories) {
+	private Integer getStarCountOrNull(Set<String> repositories) {
 		try {
 			try {
 				return gitHubConnector.getAllStarCount(repositories);

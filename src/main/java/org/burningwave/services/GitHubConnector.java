@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -169,7 +170,7 @@ public class GitHubConnector {
 	}
 
 
-	public Integer getAllStarCount(String[] repositories) throws JAXBException {
+	public Integer getAllStarCount(Set<String> repositories) throws JAXBException {
 		return merge(invoke(this::getStarCount, repositories).stream().map(outputSupplier -> outputSupplier.join()).collect(Collectors.toList()));
 	}
 
@@ -184,7 +185,7 @@ public class GitHubConnector {
 		return null;
 	}
 
-	private <O> Collection<CompletableFuture<O>> invoke(Function<Input, O> function, String[] repositories) {
+	private <O> Collection<CompletableFuture<O>> invoke(Function<Input, O> function, Set<String> repositories) {
 		Collection<CompletableFuture<O>> outputSuppliers = new ArrayList<>();
 		for (String repository : repositories) {
 			String[] repositoryInfos = repository.split(":");
