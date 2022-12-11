@@ -84,6 +84,9 @@ scheduled-operations:
    - cron: ${SCHEDULED_OPERATIONS_SWITCH_TO_REMOTE_APP_CRON:-}
      zone: ${SCHEDULED_OPERATIONS_SWITCH_TO_REMOTE_APP_ZONE:UTC}
      executable: herokuConnector.switchToRemoteApp
+   - cron: ${SCHEDULED_OPERATIONS_SSL_CONFIG_RELOAD_CRON:59 59 23 * * *}
+     zone: ${SCHEDULED_OPERATIONS_SSL_CONFIG_RELOAD_ZONE:UTC}
+     executable: sSLConfigReloader.execute
 
 burningwave:
   core:
@@ -104,3 +107,5 @@ server:
     key-store-type: ${SERVER_SSL_KEY_STORE_TYPE:pkcs12}
     key-alias: ${SERVER_SSL_KEY_ALIAS:miscellaneous-services}
     key-password: ${SERVER_SSL_KEY_PASSWORD:changeit}
+    http:
+      port: ${SERVER_SSL_HTTP_PORT:80}
