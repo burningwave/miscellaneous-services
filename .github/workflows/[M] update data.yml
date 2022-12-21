@@ -59,7 +59,7 @@ jobs:
           --SCHEDULER_ENABLED=false
 #          git commit -am "Updated crypto report"
 #          git push
-      - uses: actions/cache/save@v3
-        with:
-          path: /home/runner/work/cache
-          key: ${{ runner.os }}-cache
+#      - uses: actions/cache/save@v3
+#        with:
+#          path: /home/runner/work/cache
+#          key: ${{ runner.os }}-cache
