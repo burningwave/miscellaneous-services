@@ -33,7 +33,7 @@ jobs:
       - uses: actions/cache/restore@v3
         id: cache
         with:
-          path: ${{ home }}/cache
+          path: /cache
           key: ${{ runner.os }}-cache
       - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v3
@@ -56,12 +56,12 @@ jobs:
           --GITHUB_CONNECTOR_AUTHORIZATION_TOKEN=${{ secrets.GIT_HUB_CONNECTOR_AUTHORIZATION_TOKEN }} \
           --IO_GITHUB_TOOL_FACTORY_NEXUS_AUTHORIZATION_TOKEN=${{ secrets.IO_GITHUB_TOOL_FACTORY_NEXUS_AUTHORIZATION_TOKEN }} \
           --ORG_BURNINGWAVE_NEXUS_AUTHORIZATION_TOKEN=${{ secrets.ORG_BURNINGWAVE_NEXUS_AUTHORIZATION_TOKEN }} \
-          --CACHE_BASE_PATH=${{ home }}/cache
+          --CACHE_BASE_PATH=/cache
           --SCHEDULER_ENABLED=false
 #          git commit -am "Updated crypto report"
 #          git push
       - uses: actions/cache/save@v3
         id: cache
         with:
-          path: ${{ home }}/cache
+          path: /cache
           key: ${{ runner.os }}-cache
