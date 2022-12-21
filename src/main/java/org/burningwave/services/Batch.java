@@ -12,7 +12,12 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 public class Batch implements CommandLineRunner {
 
 	public static void main(String[] args) {
-		new SpringApplicationBuilder(Batch.class).web(WebApplicationType.NONE).run(args);
+		try {
+			new SpringApplicationBuilder(Batch.class).web(WebApplicationType.NONE).run(args);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Autowired
@@ -20,7 +25,12 @@ public class Batch implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		restController.getTotalDownloads(null, null, null, null, null);
+		try {
+			restController.getTotalDownloads(null, null, null, null, null);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 }
