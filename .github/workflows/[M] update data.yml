@@ -44,6 +44,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Update data
         run: |
+          pwd
           git config user.name "Roberto Gentili"
           git config user.email "roberto.gentili.1980@gmail.com"
           mvn clean dependency:list install -Pbatch
@@ -54,11 +55,11 @@ jobs:
           --GITHUB_CONNECTOR_AUTHORIZATION_TOKEN=${{ secrets.GIT_HUB_CONNECTOR_AUTHORIZATION_TOKEN }} \
           --IO_GITHUB_TOOL_FACTORY_NEXUS_AUTHORIZATION_TOKEN=${{ secrets.IO_GITHUB_TOOL_FACTORY_NEXUS_AUTHORIZATION_TOKEN }} \
           --ORG_BURNINGWAVE_NEXUS_AUTHORIZATION_TOKEN=${{ secrets.ORG_BURNINGWAVE_NEXUS_AUTHORIZATION_TOKEN }} \
-//          --CACHE_BASE_PATH=/home/runner/work/cache
+          --CACHE_BASE_PATH=/home/runner/work/cache \
           --SCHEDULER_ENABLED=false
 #          git commit -am "Updated crypto report"
 #          git push
-#      - uses: actions/cache/save@v3
-#        with:
-#          path: /home/runner/work/cache
-#          key: ${{ runner.os }}-cache
+      - uses: actions/cache/save@v3
+        with:
+          path: /home/runner/work/cache
+          key: ${{ runner.os }}-cache
