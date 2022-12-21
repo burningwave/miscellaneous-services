@@ -52,7 +52,7 @@ public class HerokuConnector {
 	private RestTemplate restTemplate;
 
 	@Autowired
-	private Application application;
+	private Application.Environment applicationEnvironment;
 
     static {
     	logger = org.slf4j.LoggerFactory.getLogger(HerokuConnector.class);
@@ -76,11 +76,11 @@ public class HerokuConnector {
     }
 
     public void switchToRemoteApp() throws InterruptedException {
-    	String schemeAndHostName = application.schemeAndHostName;
-    	while (application.schemeAndHostName == null) {
-    		synchronized(application) {
+    	String schemeAndHostName = applicationEnvironment.schemeAndHostName;
+    	while (applicationEnvironment.schemeAndHostName == null) {
+    		synchronized(applicationEnvironment) {
     			try {
-					application.wait();
+					applicationEnvironment.wait();
 				} catch (InterruptedException exc) {
 					logger.error("Exception occurred", exc);
 				}

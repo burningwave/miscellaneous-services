@@ -77,16 +77,18 @@ cache:
   base-path: ${CACHE_BASE_PATH:${java.io.tmpdir}/Burningwave/miscellaneous-services}
 # base-path: ${CACHE_BASE_PATH:${user.home}/Burningwave/Cache}
 
-scheduled-operations:
-   - cron: ${SCHEDULED_OPERATIONS_PING_CRON:0 0/25 * * * *}
-     zone: ${SCHEDULED_OPERATIONS_PING_ZONE:UTC}
-     executable: applicationSelfConnector.ping
-   - cron: ${SCHEDULED_OPERATIONS_SWITCH_TO_REMOTE_APP_CRON:-}
-     zone: ${SCHEDULED_OPERATIONS_SWITCH_TO_REMOTE_APP_ZONE:UTC}
-     executable: herokuConnector.switchToRemoteApp
-   - cron: ${SCHEDULED_OPERATIONS_SSL_CONFIG_RELOAD_CRON:59 59 23 * * *}
-     zone: ${SCHEDULED_OPERATIONS_SSL_CONFIG_RELOAD_ZONE:UTC}
-     executable: sSLConfigReloader.execute
+scheduler:
+  enabled: ${SCHEDULER_ENABLED:true}
+  operations:
+    - cron: ${SCHEDULER_OPERATIONS_PING_CRON:0 0/25 * * * *}
+      zone: ${SCHEDULER_OPERATIONS_PING_ZONE:UTC}
+      executable: applicationSelfConnector.ping
+    - cron: ${SCHEDULER_OPERATIONS_SWITCH_TO_REMOTE_APP_CRON:-}
+      zone: ${SCHEDULER_OPERATIONS_SWITCH_TO_REMOTE_APP_ZONE:UTC}
+      executable: herokuConnector.switchToRemoteApp
+    - cron: ${SCHEDULER_OPERATIONS_SSL_CONFIG_RELOAD_CRON:59 59 23 * * *}
+      zone: ${SCHEDULER_OPERATIONS_SSL_CONFIG_RELOAD_ZONE:UTC}
+      executable: sSLConfigReloader.execute
 
 burningwave:
   core:

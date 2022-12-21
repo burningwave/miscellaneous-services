@@ -1,0 +1,57 @@
+name: Update crypto report (manual)
+
+
+on:
+  watch:
+    types: [started]
+
+
+jobs:
+  ask-for-authorization:
+    name: Ask for authorization
+    runs-on: ubuntu-latest
+    steps:
+    - uses: octokit/request-action@v2.0.0
+      with:
+        route: GET /repos/:repository/collaborators/${{ github.actor }}
+        repository: ${{ github.repository }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+  launch-update:
+    name: Launch update
+    needs: [ask-for-authorization]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        java: [18]
+        architecture: [x64]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'zulu'
+          architecture: ${{ matrix.architecture }}
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Update and push report
+        run: |
+          export GPG_TTY=$(tty)
+          echo "${{ secrets.gpg_private_key }}" | gpg --batch --import
+          git config user.name "Roberto Gentili"
+          git config user.email "roberto.gentili.1980@gmail.com"
+          mvn clean dependency:list install
+          java \
+          -Dspring.profiles.active=burningwave,ssl \
+          -jar ./target/miscellaneous-services-10.0.0.jar org.burningwave.services.Batch \
+          --GITHUB_CONNECTOR_AUTHORIZATION_TOKEN=${{ secrets.GIT_HUB_CONNECTOR_AUTHORIZATION_TOKEN }} \
+          --IO_GITHUB_TOOL_FACTORY_NEXUS_AUTHORIZATION_TOKEN=${{ secrets.IO_GITHUB_TOOL_FACTORY_NEXUS_AUTHORIZATION_TOKEN }} \
+          --ORG_BURNINGWAVE_NEXUS_AUTHORIZATION_TOKEN=${{ secrets.ORG_BURNINGWAVE_NEXUS_AUTHORIZATION_TOKEN }} \
+          --CACHE_TYPE="File system based" \
+          --SCHEDULER_ENABLED=false
+#          git commit -am "Updated crypto report"
+#          git push
