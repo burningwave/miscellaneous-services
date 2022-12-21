@@ -31,7 +31,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/cache/restore@v3
-        id: cache
         with:
           path: /cache
           key: ${{ runner.os }}-cache
@@ -61,7 +60,6 @@ jobs:
 #          git commit -am "Updated crypto report"
 #          git push
       - uses: actions/cache/save@v3
-        id: cache
         with:
           path: /cache
           key: ${{ runner.os }}-cache
