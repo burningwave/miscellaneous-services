@@ -48,7 +48,7 @@ jobs:
           pwd
           git config user.name "Roberto Gentili"
           git config user.email "roberto.gentili.1980@gmail.com"
-          mvn clean dependency:list install -Pbatch
+          mvn clean dependency:list install -Pbatch --file pom.xml
           java \
           -Dspring.profiles.active=burningwave,ssl \
           -jar ./target/miscellaneous-services-10.0.0.jar org.burningwave.services.Batch \
