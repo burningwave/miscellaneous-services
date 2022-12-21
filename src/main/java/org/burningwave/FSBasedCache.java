@@ -57,7 +57,7 @@ public class FSBasedCache extends SimpleCache.Abst {
 		basePath = ((String)configMap.get("base-path")).replace("\\", "/");
 		File file = new File(basePath);
 		file.mkdirs();
-		logger.info("File system based cache successfully instantiated");
+		logger.info("File system based cache successfully installed to path {}", file.getAbsolutePath());
 	}
 
 
