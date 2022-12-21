@@ -38,7 +38,7 @@ jobs:
           architecture: ${{ matrix.architecture }}
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: Update and push report
+      - name: Update data
         run: |
           git config user.name "Roberto Gentili"
           git config user.email "roberto.gentili.1980@gmail.com"
