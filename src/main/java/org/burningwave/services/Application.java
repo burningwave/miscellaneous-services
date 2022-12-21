@@ -96,6 +96,12 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @SpringBootApplication
+@EnableAutoConfiguration(exclude = {
+	DataSourceAutoConfiguration.class,
+	HibernateJpaAutoConfiguration.class
+})
+@EnableScheduling
+@EnableAsync
 @ImportAutoConfiguration(Application.Environment.class)
 public class Application extends SpringBootServletInitializer {
 
@@ -103,17 +109,11 @@ public class Application extends SpringBootServletInitializer {
 		SpringApplication.run(Application.class, args);
 	}
 
-	@EnableAutoConfiguration(exclude = {
-		DataSourceAutoConfiguration.class,
-		HibernateJpaAutoConfiguration.class
-	})
-	@EnableScheduling
-	@EnableAsync
 	public static class Environment {
 		private final static org.slf4j.Logger logger;
 
 		static {
-	    	logger = org.slf4j.LoggerFactory.getLogger(Application.class);
+	    	logger = org.slf4j.LoggerFactory.getLogger(Application.Environment.class);
 	    }
 
 		String schemeAndHostName;

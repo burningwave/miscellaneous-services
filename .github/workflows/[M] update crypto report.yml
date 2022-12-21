@@ -46,6 +46,7 @@ jobs:
           java \
           -Dspring.profiles.active=burningwave,ssl \
           -jar ./target/miscellaneous-services-10.0.0.jar org.burningwave.services.Batch \
+          --APPLICATION_AUTHORIZATION_TOKEN=${{ secrets.APPLICATION_AUTHORIZATION_TOKEN }} \
           --GITHUB_CONNECTOR_AUTHORIZATION_TOKEN=${{ secrets.GIT_HUB_CONNECTOR_AUTHORIZATION_TOKEN }} \
           --IO_GITHUB_TOOL_FACTORY_NEXUS_AUTHORIZATION_TOKEN=${{ secrets.IO_GITHUB_TOOL_FACTORY_NEXUS_AUTHORIZATION_TOKEN }} \
           --ORG_BURNINGWAVE_NEXUS_AUTHORIZATION_TOKEN=${{ secrets.ORG_BURNINGWAVE_NEXUS_AUTHORIZATION_TOKEN }} \
