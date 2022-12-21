@@ -40,8 +40,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Update and push report
         run: |
-#         export GPG_TTY=$(tty)
-#         echo "${{ secrets.gpg_private_key }}" | gpg --batch --import
           git config user.name "Roberto Gentili"
           git config user.email "roberto.gentili.1980@gmail.com"
           mvn clean dependency:list install
