@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/cache/restore@v3
         with:
-          path: /home/runner/work/miscellaneous-services/cache
+          path: /tmp/Burningwave/miscellaneous-services/cache
           key: ${{ runner.os }}-miscellaneous-services-cache
       - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v3
@@ -60,5 +60,5 @@ jobs:
 #          git push
       - uses: actions/cache/save@v3
         with:
-          path: /home/runner/work/miscellaneous-services/cache
+          path: /tmp/Burningwave/miscellaneous-services/cache
           key: ${{ runner.os }}-miscellaneous-services-cache
