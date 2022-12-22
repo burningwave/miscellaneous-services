@@ -55,7 +55,6 @@ jobs:
           --GITHUB_CONNECTOR_AUTHORIZATION_TOKEN=${{ secrets.GIT_HUB_CONNECTOR_AUTHORIZATION_TOKEN }} \
           --IO_GITHUB_TOOL_FACTORY_NEXUS_AUTHORIZATION_TOKEN=${{ secrets.IO_GITHUB_TOOL_FACTORY_NEXUS_AUTHORIZATION_TOKEN }} \
           --ORG_BURNINGWAVE_NEXUS_AUTHORIZATION_TOKEN=${{ secrets.ORG_BURNINGWAVE_NEXUS_AUTHORIZATION_TOKEN }} \
-          --CACHE_BASE_PATH=/home/runner/work/miscellaneous-services/cache \
           --SCHEDULER_ENABLED=false
 #          git commit -am "Updated crypto report"
 #          git push
