@@ -120,6 +120,7 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
+					<mainClass>${main-class}</mainClass>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -131,38 +132,18 @@
 	        <activation>
 	            <activeByDefault>true</activeByDefault>
 	        </activation>
-			<build>
-				<plugins>
-					<plugin>
-					    <groupId>org.apache.maven.plugins</groupId>
-					    <artifactId>maven-jar-plugin</artifactId>
-					    <configuration>
-					        <excludes>
-					             <exclude>org/burningwave/services/Batch.class</exclude>
-					        </excludes>
-					    </configuration>
-					</plugin>
-				</plugins>
-			</build>
+	        <properties>
+	        	<main-class>org.burningwave.services.Application</main-class>
+	        </properties>
 		</profile>
 		<profile>
 			<id>batch</id>
 	        <activation>
 	            <activeByDefault>false</activeByDefault>
 	        </activation>
-			<build>
-				<plugins>
-					<plugin>
-					    <groupId>org.apache.maven.plugins</groupId>
-					    <artifactId>maven-jar-plugin</artifactId>
-					    <configuration>
-					        <excludes>
-					             <exclude>org/burningwave/services/Application.class</exclude>
-					        </excludes>
-					    </configuration>
-					</plugin>
-				</plugins>
-			</build>
+	        <properties>
+	        	<main-class>org.burningwave.services.Batch</main-class>
+	        </properties>
 		</profile>
 	</profiles>					
 

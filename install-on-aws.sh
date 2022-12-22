@@ -17,11 +17,11 @@ mvn clean dependency:list install
 screen -d -m sudo java \
 -Dspring.profiles.active=burningwave,ssl \
 -cp . \
--jar ./target/site-1.0.0.jar \
+-jar ./target/miscellaneous-services-10.0.0.jar \
 --APPLICATION_AUTHORIZATION_TOKEN=yourToken \
 --GITHUB_CONNECTOR_AUTHORIZATION_TOKEN=yourToken \
 --IO_GITHUB_TOOL_FACTORY_NEXUS_AUTHORIZATION_TOKEN=yourToken \
 --ORG_BURNINGWAVE_NEXUS_AUTHORIZATION_TOKEN=yourToken \
---SCHEDULED_OPERATIONS_PING_CRON=- \
+--SCHEDULER_OPERATIONS_PING_CRON=- \
 --SERVER_SSL_KEY_STORE_PASSWORD=changeit \
 --SERVER_SSL_KEY_PASSWORD=changeit
