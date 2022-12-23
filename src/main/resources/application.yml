@@ -42,6 +42,7 @@ spring:
     view:
       prefix: /WEB-INF/jsp/
       suffix: .jsp
+    throw-exception-if-no-handler-found: true  
 
 springdoc:
   api-docs:
