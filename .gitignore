@@ -22,5 +22,5 @@ hs_err_pid*
 /.project
 /.settings
 /.classpath
-Misc-services.launch
-Misc-services (Batch).launch
+Burningwave miscellaneous-services - run.launch
+Burningwave miscellaneous-services - run batch.launch
