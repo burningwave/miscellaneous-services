@@ -22,3 +22,5 @@ hs_err_pid*
 /.project
 /.settings
 /.classpath
+Misc-services.launch
+Misc-services (Batch).launch
